@@ -22,11 +22,11 @@ CLI tool to find unused code in TypeScript projects
 
 - `ts-find-unused /path/to/project -d`
 
-**tsconfig.json path:**
+**tsconfig.json path:** (todo - make this the default?)
 
 - `ts-find-unused /path/to/project --tsconfigPath=/path/to/project/tsconfig-test.json`
 
-**Ignore Patterns**
+**Ignore Patterns** (comma separated)
 
 - `ts-find-unused /path/to/project --ignorePatterns=__tests__,stories`
 
