@@ -6,7 +6,33 @@ CLI tool to find unused code in TypeScript projects
 
 ### TODOs
 
-- Add prettier dependency for formatting markdown,json
+- Add `prettier` dependency for formatting markdown,json output
+
+- Add remaining CLI options
+
+- Add a few tests
+
+- Add error handling when `tsconfig.json` can't be found
+
+- Add some color to `printToStdout` function
+
+- Documentation
+
+  - Add proper header to `README.md`
+  - Add `Installation Instructions` to `README.md` (just use `npx`?)
+  - Add `CONTRIBUTING.md`
+  - Add `CODE_OF_CONDUCT.md`
+  - Add `Built With` section to `README.md`
+  - Add `License` section to `README.md`
+  - Add `Built by @aeksco` to `README.md`
+  - Add remaining GitHub community files
+  - Link issue requesting feedback to VSCode Extension
+  - Finalize name of project (maybe rename to `ts-tidy` / `ts-tidy-up` / `tidy-up-ts`)
+  - Layout release plan
+
+### TODOs Goals
+
+- Update to function as monorepo - add `core`, `cli`, `vscode-extension` packages
 
 ---
 
@@ -45,3 +71,10 @@ CLI tool to find unused code in TypeScript projects
 - `ts-find-unused /path/to/project --outputFormat=markdown --outputDestination=./unused.md`
 
 - `ts-find-unused /path/to/project --outputFormat=json --outputDestination=./unused.json`
+
+### Built With
+
+- [`typescript`]()
+- [`jest`]()
+- [`prettier`]()
+- [`ts-morph`]()
