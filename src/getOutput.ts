@@ -46,7 +46,7 @@ export function generateJsonOutput(
 
 export function generateTxtOutput(identifiers: UnreferencedSymbol[]): string[] {
   return identifiers.map(uid => {
-    return `${uid.label} (${uid.type}) -> ${uid.relativePath}:{uid.lineNumber}`;
+    return `${uid.label} (${uid.type}) -> ${uid.relativePath}:${uid.lineNumber}`;
   });
 }
 

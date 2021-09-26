@@ -74,7 +74,7 @@ export const runCommand = (...args) => {
     tsConfigFile: "tsconfig.json",
     // outputFormat: "json",
     // outputDestination: "./output.json",
-    log: true
+    log: false
   });
 };
 
