@@ -11,7 +11,12 @@ export function scanProject(props: {
   ignorePatterns: string[];
   log: boolean;
 }): UnreferencedSymbol[] {
-  const { projectRoot, tsConfigFilePath, ignorePatterns, log = false } = props;
+  const {
+    projectRoot,
+    tsConfigFilePath,
+    ignorePatterns = [],
+    log = false
+  } = props;
 
   if (log) {
     console.log("loading project...");
@@ -34,9 +39,9 @@ export function scanProject(props: {
   let allUnused: UnreferencedSymbol[] = [];
 
   sourceFiles.forEach(sourceFile => {
-    // Ignore files in web/web/pages
-    // TODO - wire up to ignore patterns
-    if (sourceFile.getFilePath().includes("web/web/pages")) {
+    // Skip sourceFiles where filepath includes one of the ignore patterns
+    const filePath = sourceFile.getFilePath();
+    if (ignorePatterns.some(ip => filePath.includes(ip))) {
       return;
     }
 
