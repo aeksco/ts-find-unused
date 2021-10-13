@@ -74,7 +74,9 @@ CLI tool to find unused code in TypeScript projects
 
 ### Built With
 
-- [`typescript`]()
-- [`jest`]()
-- [`prettier`]()
-- [`ts-morph`]()
+- [TypeScript](https://www.typescriptlang.org/)
+- [Commander.js](https://github.com/tj/commander.js/)
+- [Chalk](https://github.com/chalk/chalk)
+- [Jest](https://jestjs.io/)
+- [Prettier](http://prettier.io/)
+- [ts-morph](https://github.com/dsherret/ts-morph)
