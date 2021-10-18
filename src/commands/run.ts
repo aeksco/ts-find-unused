@@ -1,4 +1,4 @@
-import { writeFileSync } from "fs";
+import { writeFileSync, opendirSync } from "fs";
 import chalk from "chalk";
 import * as path from "path";
 import { OutputFormat, OutputFormats } from "../types";
@@ -67,13 +67,20 @@ export function main(props: {
 
 // // // //
 
-export const runCommand = (...args) => {
+export const runCommand = (opts: {
+  output: "txt" | "json" | "markdown";
+  destination: string | undefined;
+  debug: boolean;
+  projectPath: string;
+  ignorePatterns: string[];
+}) => {
   // TODO - separate main out into separate functions here
   main({
     projectRoot: "/home/aeksco/code/ts-find-unused",
     tsConfigFile: "tsconfig.json",
-    // outputFormat: "json",
-    // outputDestination: "./output.json",
+    outputFormat: opts.output,
+    outputDestination: opts.destination,
+    ignorePatterns: opts.ignorePatterns,
     log: false
   });
 };

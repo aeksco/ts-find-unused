@@ -33,33 +33,66 @@ const program = new Command();
 // Setup `plugin-run` command
 program
   .version(String(packageJson.version))
-  .argument("<project path>", "path to TypeScript project") // TODO - remove project path, just run against CWD by default
   // TODO - is there a way to log output as a SINGLE LINE? Investigate this - I see it a lot, would be cool to display the name of the current file WITHOUT printing a ton of shit to STDOUT
-  // .option("-logLevel --l", "Log level - log progress during the scan")
-  .option("-d --debug", "Debug - log verbose progress during the scan")
+  // TODO - is there a way to log output as a SINGLE LINE? Investigate this - I see it a lot, would be cool to display the name of the current file WITHOUT printing a ton of shit to STDOUT
+  // TODO - is there a way to log output as a SINGLE LINE? Investigate this - I see it a lot, would be cool to display the name of the current file WITHOUT printing a ton of shit to STDOUT
+  .option("--debug", "Debug - log verbose progress during the scan")
   .option(
-    "-i --ignorePatterns",
+    "-p --project-path <tsconfigFile>",
+    "Optional filepath to write the output instead of logging to stdout"
+  )
+  .option(
+    "-i --ignore-patterns <ignorePatterns>",
     "Ignore Patters - skip scanning files that match the a glob style pattern"
   )
   .option(
-    "-o --output txt|markdown|json",
-    "Output - choose output format (default: txt)"
+    "-o --output <output>",
+    "Output - choose output format txt|markdown|json (default: txt)"
   )
   .option(
-    "-d --destination",
+    "-d --destination <destination>",
     "Optional filepath to write the output instead of logging to stdout"
   )
-  .description("run the command ")
-  .action((projectPath, opts, cmd) => {
-    // console.log(projectPath);
-    // console.log(cmd);
-    // console.log(opts);
-    // const options = cleanArgs(cmd);
-    // console.log(options);
+  .description("run the command")
+  .action(
+    (opts: {
+      output?: "markdown" | "txt" | "json";
+      destination?: string;
+      debug?: boolean;
+      projectPath?: string;
+      ignorePatterns?: string;
+    }) => {
+      const {
+        output = "markdown",
+        destination = undefined,
+        debug = false,
+        projectPath = "./tsconfig.json",
+        ignorePatterns = ""
+      } = opts;
 
-    // TODO - pass options into runCommand
-    runCommand();
-  });
+      // Short-circuit execution if output isn't valid
+      // if (["s"].includes(output)) {
+      //   console.log(`"${output}" is not a valid option for -o`);
+      //   process.exit(0);
+      // }
+
+      const ignorePatternsArray = ignorePatterns.split(",");
+
+      // Log out options if debug is "true"
+      if (debug) {
+        console.log(opts);
+      }
+
+      // Pass parameters to `runCommand`
+      runCommand({
+        output,
+        debug,
+        destination,
+        projectPath,
+        ignorePatterns: ignorePatternsArray
+      });
+    }
+  );
 
 // output help information on unknown commands
 // TODO - do we need this?
@@ -83,9 +116,10 @@ program.on("--help", () => {
 // program.commands.forEach(c => c.on("--help", () => console.log()));
 
 // Parse arguments into commander program
-program.parse(process.argv);
+// program.parse(process.argv);
+program.parse();
 
 // Output --help if there are no arguments passed
-if (!process.argv.slice(2).length) {
-  program.outputHelp();
-}
+// if (!process.argv.slice(2).length) {
+//   program.outputHelp();
+// }
