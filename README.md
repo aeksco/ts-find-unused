@@ -22,15 +22,14 @@ CLI tool to find unused code in TypeScript projects
   - Add `Installation Instructions` to `README.md` (just use `npx`?)
   - Add `CONTRIBUTING.md`
   - Add `CODE_OF_CONDUCT.md`
-  - Add `Built With` section to `README.md`
   - Add `License` section to `README.md`
   - Add `Built by @aeksco` to `README.md`
   - Add remaining GitHub community files
   - Link issue requesting feedback to VSCode Extension
-  - Finalize name of project (maybe rename to `ts-tidy` / `ts-tidy-up` / `tidy-up-ts`)
+  - Finalize name of project (maybe rename to `ts-tidy` / `ts-tidy-up` / `tidy-up-ts` / `typescript-tidy` / `tidy-typescript` / `@ts-tidy/cli`)
   - Layout release plan
 
-### TODOs Goals
+### TODOs - Stretch Goals
 
 - Update to function as monorepo - add `core`, `cli`, `vscode-extension` packages
 

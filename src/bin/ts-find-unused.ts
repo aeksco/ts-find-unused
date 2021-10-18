@@ -33,17 +33,21 @@ const program = new Command();
 // Setup `plugin-run` command
 program
   .version(String(packageJson.version))
-  .argument("<project path>", "path to TypeScript project")
+  .argument("<project path>", "path to TypeScript project") // TODO - remove project path, just run against CWD by default
+  // TODO - is there a way to log output as a SINGLE LINE? Investigate this - I see it a lot, would be cool to display the name of the current file WITHOUT printing a ton of shit to STDOUT
   // .option("-logLevel --l", "Log level - log progress during the scan")
-  .option("-d --debug", "Debug flag - log verbose progress during the scan")
+  .option("-d --debug", "Debug - log verbose progress during the scan")
   .option(
     "-i --ignorePatterns",
-    "Ignore Patters - skip scanning files that match the a glob style pattern "
+    "Ignore Patters - skip scanning files that match the a glob style pattern"
   )
-  .option("-o --output txt|markdown|json", "Scans the project ")
+  .option(
+    "-o --output txt|markdown|json",
+    "Output - choose output format (default: txt)"
+  )
   .option(
     "-d --destination",
-    "Optional filepath to write the output instead of logging to stdout "
+    "Optional filepath to write the output instead of logging to stdout"
   )
   .description("run the command ")
   .action((projectPath, opts, cmd) => {
@@ -58,6 +62,7 @@ program
   });
 
 // output help information on unknown commands
+// TODO - do we need this?
 // program.arguments("<command>").action(cmd => {
 //   program.outputHelp();
 //   console.log(`  ` + chalk.red(`Unknown command ${chalk.yellow(cmd)}.`));
@@ -65,6 +70,7 @@ program
 // });
 
 // add some useful info on help
+// TODO - do we need this?
 program.on("--help", () => {
   console.log();
   console.log(
