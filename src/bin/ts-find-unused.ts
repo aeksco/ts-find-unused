@@ -70,11 +70,12 @@ program
         ignorePatterns = ""
       } = opts;
 
-      // Short-circuit execution if output isn't valid
-      // if (["s"].includes(output)) {
-      //   console.log(`"${output}" is not a valid option for -o`);
-      //   process.exit(0);
-      // }
+      // Short-circuit execution if "output" option isn't valid
+      // @ts-ignore
+      if (!["markdown" | "json" | "txt"].includes(output)) {
+        console.log(`"${output}" is not a valid option for -o`);
+        process.exit(0);
+      }
 
       const ignorePatternsArray = ignorePatterns.split(",");
 
