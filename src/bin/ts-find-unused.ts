@@ -77,7 +77,8 @@ program
         process.exit(0);
       }
 
-      const ignorePatternsArray = ignorePatterns.split(",");
+      // Split ignorePatterns text into array
+      const ignorePatternsArray: string[] = ignorePatterns.split(",");
 
       // Log out options if debug is "true"
       if (debug) {
