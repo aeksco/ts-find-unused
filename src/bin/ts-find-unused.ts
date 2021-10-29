@@ -71,8 +71,7 @@ program
       } = opts;
 
       // Short-circuit execution if "output" option isn't valid
-      // @ts-ignore
-      if (!["markdown" | "json" | "txt"].includes(output)) {
+      if (["markdown", "json", "txt"].indexOf(output) === -1) {
         console.log(`"${output}" is not a valid option for -o`);
         process.exit(0);
       }

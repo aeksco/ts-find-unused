@@ -76,7 +76,8 @@ export const runCommand = (opts: {
 }) => {
   // TODO - separate main out into separate functions here
   main({
-    projectRoot: "/home/aeksco/code/ts-find-unused",
+    // projectRoot: "/home/aeksco/code/ts-find-unused",
+    projectRoot: process.cwd(), // TODO - fix this?
     tsConfigFile: "tsconfig.json",
     outputFormat: opts.output,
     outputDestination: opts.destination,
