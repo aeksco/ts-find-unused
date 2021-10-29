@@ -3,4 +3,5 @@ export function printToStdout(lines: string[]): void {
   lines.forEach(line => {
     console.log(line);
   });
+  console.log("\n");
 }

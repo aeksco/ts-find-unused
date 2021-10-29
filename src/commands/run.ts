@@ -44,6 +44,7 @@ export function main(props: {
         "No unused code found :)"
       )} thank you for using ts-find-unused`
     );
+    return;
   }
 
   // Get formatted output
