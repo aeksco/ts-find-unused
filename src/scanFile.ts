@@ -8,7 +8,13 @@ import {
   TypeAliasDeclaration,
   VariableDeclaration
 } from "ts-morph";
-import { SymbolType, SymbolTypes, UnreferencedSymbol } from "./types";
+import {
+  SymbolType,
+  SymbolTypes,
+  UnreferencedSymbol,
+  LogLevel,
+  LogLevels
+} from "./types";
 
 // // // //
 
@@ -28,13 +34,14 @@ function findUnusedIdentifiers(props: {
     | VariableDeclaration;
   projectRoot: string;
   type: SymbolType;
-  log?: boolean;
+  logLevel: LogLevel;
 }): UnreferencedSymbol[] {
-  const { symbol, projectRoot, type, log = false } = props;
+  const { symbol, projectRoot, type, logLevel } = props;
   const references: ReferencedSymbol[] = symbol.findReferences();
   // const references: ReferencedSymbol[] = project.getLanguageService().findReferences(symbol)
 
-  if (log) {
+  // TODO - annotate
+  if (logLevel === LogLevels.verbose) {
     // @ts-ignore
     console.log(symbol.getNodeProperty("name")._compilerNode.escapedText);
   }
@@ -46,14 +53,14 @@ function findUnusedIdentifiers(props: {
       // console.log(r);
       allReferences.push(r.getSourceFile().getFilePath());
 
-      if (log) {
+      if (logLevel === LogLevels.verbose) {
         console.log(r.getSourceFile().getFilePath());
       }
     }
   }
 
-  if (log) {
-    console.log(`find references: ${allReferences.length}`);
+  if (logLevel !== LogLevels.none) {
+    console.log(`Find references: ${allReferences.length}`);
   }
 
   let unusedIdentifiers: UnreferencedSymbol[] = [];
@@ -89,9 +96,9 @@ function findUnusedIdentifiers(props: {
 export function scanFile(props: {
   sourceFile: SourceFile;
   projectRoot: string;
-  log?: boolean;
+  logLevel: LogLevel;
 }): UnreferencedSymbol[] {
-  const { sourceFile, projectRoot, log = false } = props;
+  const { sourceFile, projectRoot, logLevel } = props;
   const classes: ClassDeclaration[] = sourceFile.getClasses();
   const interfaces: InterfaceDeclaration[] = sourceFile.getInterfaces();
   const typeAliases: TypeAliasDeclaration[] = sourceFile.getTypeAliases();
@@ -99,7 +106,8 @@ export function scanFile(props: {
   const functions: FunctionDeclaration[] = sourceFile.getFunctions();
   const variables: VariableDeclaration[] = sourceFile.getVariableDeclarations();
 
-  if (log) {
+  // TODO - annotate this
+  if (logLevel === LogLevels.verbose) {
     console.log("Checking ", sourceFile.getFilePath());
     console.log("interfaces", interfaces.length);
     console.log("classes", classes.length);
@@ -118,6 +126,7 @@ export function scanFile(props: {
       ...unusedIdentifiers,
       ...findUnusedIdentifiers({
         symbol,
+        logLevel,
         projectRoot,
         type: SymbolTypes.typeAlias
       })
@@ -130,6 +139,7 @@ export function scanFile(props: {
       ...unusedIdentifiers,
       ...findUnusedIdentifiers({
         symbol,
+        logLevel,
         projectRoot,
         type: SymbolTypes.function
       })
@@ -142,6 +152,7 @@ export function scanFile(props: {
       ...unusedIdentifiers,
       ...findUnusedIdentifiers({
         symbol,
+        logLevel,
         projectRoot,
         type: SymbolTypes.class
       })
@@ -152,7 +163,12 @@ export function scanFile(props: {
   enums.forEach((symbol: EnumDeclaration) => {
     unusedIdentifiers = [
       ...unusedIdentifiers,
-      ...findUnusedIdentifiers({ symbol, projectRoot, type: SymbolTypes.enum })
+      ...findUnusedIdentifiers({
+        symbol,
+        logLevel,
+        projectRoot,
+        type: SymbolTypes.enum
+      })
     ];
   });
 
@@ -162,6 +178,7 @@ export function scanFile(props: {
       ...unusedIdentifiers,
       ...findUnusedIdentifiers({
         symbol,
+        logLevel,
         projectRoot,
         type: SymbolTypes.variable
       })
@@ -175,11 +192,13 @@ export function scanFile(props: {
         ...unusedIdentifiers,
         ...findUnusedIdentifiers({
           symbol,
+          logLevel,
           projectRoot,
           type: SymbolTypes.interface
         })
       ];
     } catch (e) {
+      // TODO - wrap in logLevel?
       console.log("Warning: interface lookup err");
     }
   });
