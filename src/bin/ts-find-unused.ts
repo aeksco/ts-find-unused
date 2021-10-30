@@ -6,7 +6,7 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import { runCommand } from "../commands/run";
-import { cleanArgs } from "../util/cleanArgs";
+import { LogLevels, LogLevel } from "../types";
 const packageJson = require("../../package.json");
 
 // // // //
@@ -53,6 +53,10 @@ program
     "-d --destination <destination>",
     "Optional filepath to write the output instead of logging to stdout"
   )
+  .option(
+    "-l --logLevel <logLevel>",
+    "Log Level - choose level of program logs none|info|verbose (default: none)"
+  )
   .description("run the command")
   .action(
     (opts: {
@@ -60,10 +64,12 @@ program
       destination?: string;
       debug?: boolean;
       projectPath?: string;
+      logLevel?: LogLevel;
       ignorePatterns?: string;
     }) => {
       const {
-        output = "markdown",
+        output = "txt",
+        logLevel = LogLevels.none,
         destination = undefined,
         debug = false,
         projectPath = "./tsconfig.json",
@@ -76,8 +82,10 @@ program
         process.exit(0);
       }
 
-      // Split ignorePatterns text into array
-      const ignorePatternsArray: string[] = ignorePatterns.split(",");
+      // Split ignorePatterns text into array + remove empty strings
+      const ignorePatternsArray: string[] = ignorePatterns
+        .split(",")
+        .filter(i => i !== "");
 
       // Log out options if debug is "true"
       if (debug) {
@@ -90,6 +98,7 @@ program
         debug,
         destination,
         projectPath,
+        logLevel,
         ignorePatterns: ignorePatternsArray
       });
     }

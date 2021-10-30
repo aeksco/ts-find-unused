@@ -1,29 +1,29 @@
-import { writeFileSync, opendirSync } from "fs";
+import { writeFileSync } from "fs";
 import chalk from "chalk";
 import * as path from "path";
-import { OutputFormat, OutputFormats } from "../types";
+import { OutputFormat, OutputFormats, LogLevel, LogLevels } from "../types";
 import { scanProject } from "../scanProject";
 import { getOutput } from "../getOutput";
+import { prettify } from "../prettify";
 import { printToStdout } from "../printToStdout";
 
 // // // //
-// Main code here
 
-export function main(props: {
+function main(props: {
   projectRoot: string;
   tsConfigFile: string;
-  ignorePatterns?: string[];
+  ignorePatterns: string[];
   outputFormat?: OutputFormat;
   outputDestination?: string;
-  log?: boolean;
+  logLevel: LogLevel;
 }): void {
   const {
+    logLevel,
     projectRoot,
     tsConfigFile = "tsconfig.json",
     ignorePatterns = [],
     outputFormat = OutputFormats.txt,
-    outputDestination = null,
-    log = false
+    outputDestination = null
   } = props;
 
   // TODO - this should be decoupled from main ->
@@ -32,10 +32,14 @@ export function main(props: {
     projectRoot,
     tsConfigFilePath: path.resolve(projectRoot, tsConfigFile),
     ignorePatterns,
-    log // TODO - log should be a function
-    // TODO - add props.logLevel
-    // TODO - add props.debug
+    logLevel
   });
+
+  // TOOD - annotate
+  if (logLevel !== LogLevels.none) {
+    console.log("allUnused");
+    console.log(allUnused);
+  }
 
   // Log no-unused-code-found message
   if (allUnused.length === 0) {
@@ -57,7 +61,7 @@ export function main(props: {
   if (outputDestination !== null) {
     writeFileSync(
       path.resolve(process.cwd(), outputDestination),
-      output.join("\n")
+      prettify({ source: output.join("\n"), outputFormat })
     );
     return;
   }
@@ -68,25 +72,37 @@ export function main(props: {
 
 // // // //
 
+/**
+ * runCommand
+ * TODO - annotate
+ * TODO - annotate
+ * TODO - annotate
+ */
 export const runCommand = (opts: {
   output: "txt" | "json" | "markdown";
   destination: string | undefined;
   debug: boolean;
   projectPath: string;
   ignorePatterns: string[];
+  logLevel: LogLevel;
 }) => {
   // TODO - separate main out into separate functions here
   main({
-    // projectRoot: "/home/aeksco/code/ts-find-unused",
-    projectRoot: process.cwd(), // TODO - fix this?
+    projectRoot: process.cwd(),
     tsConfigFile: "tsconfig.json",
     outputFormat: opts.output,
     outputDestination: opts.destination,
     ignorePatterns: opts.ignorePatterns,
-    log: false
+    logLevel: opts.logLevel
   });
 };
 
 // // // //
+// // // //
+// // // //
+// // // //
+// // // //
+
 // TODO - remove this - just here for testing this project against...this project
 const foo = "1234";
+const bar = "1234";
