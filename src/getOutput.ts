@@ -1,8 +1,11 @@
 import { UnreferencedSymbol, OutputFormat, OutputFormats } from "./types";
 
 // // // //
-// Output generation
 
+/**
+ * generateMarkdownOutput
+ * Generate output as Markdown
+ */
 export function generateMarkdownOutput(
   identifiers: UnreferencedSymbol[]
 ): string[] {
@@ -24,6 +27,10 @@ export function generateMarkdownOutput(
   return markdownOutput;
 }
 
+/**
+ * generateJsonOutput
+ * Generate output as JSON
+ */
 export function generateJsonOutput(
   identifiers: UnreferencedSymbol[]
 ): string[] {
@@ -44,12 +51,20 @@ export function generateJsonOutput(
   return [JSON.stringify(jsonOutput, null, 4)];
 }
 
+/**
+ * generateTxtOutput
+ * Generate formatted .txt output
+ */
 export function generateTxtOutput(identifiers: UnreferencedSymbol[]): string[] {
   return identifiers.map(uid => {
-    return `${uid.label} (${uid.type}) -> ${uid.relativePath}:${uid.lineNumber}`;
+    return `  -  ${uid.label} (${uid.type}) -> ${uid.relativePath}:${uid.lineNumber}`;
   });
 }
 
+/**
+ * getOutput
+ * Gets the program output as an array of strings
+ */
 export function getOutput(props: {
   allUnused: UnreferencedSymbol[];
   outputFormat: OutputFormat;
