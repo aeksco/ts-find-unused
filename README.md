@@ -6,15 +6,15 @@ CLI tool to find unused code in TypeScript projects
 
 ### TODOs
 
-- Add `prettier` dependency for formatting markdown,json output
-
 - Add remaining CLI options
 
 - Add a few tests
 
 - Add error handling when `tsconfig.json` can't be found
 
-- Add some color to `printToStdout` function
+- Add loading spinner? https://blog.bitsrc.io/build-command-line-spinners-in-node-js-3e432d926d56
+
+- Add some color to `printToStdout` function?
 
 - Documentation
 

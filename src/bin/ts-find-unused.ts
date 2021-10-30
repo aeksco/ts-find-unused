@@ -18,25 +18,11 @@ const program = new Command();
 //    tsconfig.json path:
 //      ts-find-unused /path/to/project --tsconfigPath=/path/to/project/tsconfig-test.json
 //
-//    Output Format
-//      ts-find-unused /path/to/project --outputFormat=txt (default)
-//      ts-find-unused /path/to/project --outputFormat=markdown
-//      ts-find-unused /path/to/project --outputFormat=json
-//
-//    Output Destination
-//      ts-find-unused /path/to/project --outputDestination=./unused.txt
-//      ts-find-unused /path/to/project --outputFormat=markdown --outputDestination=./unused.md
-//      ts-find-unused /path/to/project --outputFormat=json --outputDestination=./unused.json
-//
 // // // //
 
 // Setup `plugin-run` command
 program
   .version(String(packageJson.version))
-  // TODO - is there a way to log output as a SINGLE LINE? Investigate this - I see it a lot, would be cool to display the name of the current file WITHOUT printing a ton of shit to STDOUT
-  // TODO - is there a way to log output as a SINGLE LINE? Investigate this - I see it a lot, would be cool to display the name of the current file WITHOUT printing a ton of shit to STDOUT
-  // TODO - is there a way to log output as a SINGLE LINE? Investigate this - I see it a lot, would be cool to display the name of the current file WITHOUT printing a ton of shit to STDOUT
-  .option("--debug", "Debug - log verbose progress during the scan")
   .option(
     "-p --project-path <tsconfigFile>",
     "Optional filepath to write the output instead of logging to stdout"
@@ -57,7 +43,8 @@ program
     "-l --logLevel <logLevel>",
     "Log Level - choose level of program logs none|info|verbose (default: none)"
   )
-  .description("run the command")
+  .option("--debug", "Debug - debug CLI options")
+  .description("Run the ts-find-unused program")
   .action(
     (opts: {
       output?: "markdown" | "txt" | "json";
@@ -78,7 +65,7 @@ program
 
       // Short-circuit execution if "output" option isn't valid
       if (["markdown", "json", "txt"].indexOf(output) === -1) {
-        console.log(`"${output}" is not a valid option for -o`);
+        console.log(`"${output}" is not a valid option for --outputFormat`);
         process.exit(0);
       }
 
@@ -89,13 +76,13 @@ program
 
       // Log out options if debug is "true"
       if (debug) {
+        console.log("Debug CLI options:");
         console.log(opts);
       }
 
-      // Pass parameters to `runCommand`
+      // Pass parameters to `runCommand` to run the program
       runCommand({
         output,
-        debug,
         destination,
         projectPath,
         logLevel,
@@ -104,32 +91,15 @@ program
     }
   );
 
-// output help information on unknown commands
-// TODO - do we need this?
-// program.arguments("<command>").action(cmd => {
-//   program.outputHelp();
-//   console.log(`  ` + chalk.red(`Unknown command ${chalk.yellow(cmd)}.`));
-//   console.log();
-// });
-
-// add some useful info on help
-// TODO - do we need this?
+// Add help command
 program.on("--help", () => {
   console.log();
   console.log(
-    `  Run ${chalk.cyan(`TODO - add help text here`)} with helpful information.`
+    `  Support this project at ${chalk.cyan(
+      `https://github.com/aeksco/ts-find-unused`
+    )}\n`
   );
-  console.log();
 });
 
-// Stub-out dedicated help command for each individual command
-// program.commands.forEach(c => c.on("--help", () => console.log()));
-
 // Parse arguments into commander program
-// program.parse(process.argv);
 program.parse();
-
-// Output --help if there are no arguments passed
-// if (!process.argv.slice(2).length) {
-//   program.outputHelp();
-// }

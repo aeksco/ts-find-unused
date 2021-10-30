@@ -81,7 +81,6 @@ function main(props: {
 export const runCommand = (opts: {
   output: "txt" | "json" | "markdown";
   destination: string | undefined;
-  debug: boolean;
   projectPath: string;
   ignorePatterns: string[];
   logLevel: LogLevel;
