@@ -1,5 +1,5 @@
 import { Project, ScriptTarget, SourceFile } from "ts-morph";
-import { UnreferencedSymbol } from "./types";
+import { UnreferencedSymbol, LogLevel, LogLevels } from "./types";
 import { scanFile } from "./scanFile";
 
 // // // //
@@ -9,17 +9,18 @@ export function scanProject(props: {
   projectRoot: string;
   tsConfigFilePath: string;
   ignorePatterns: string[];
-  log: boolean;
+  logLevel: LogLevel;
 }): UnreferencedSymbol[] {
   const {
     projectRoot,
     tsConfigFilePath,
     ignorePatterns = [],
-    log = false
+    logLevel
   } = props;
 
-  if (log) {
-    console.log("loading project...");
+  // TODO - integrate ora spinner here
+  if (logLevel !== LogLevels.info) {
+    console.log("Loading project...");
   }
 
   const project = new Project({
@@ -31,9 +32,10 @@ export function scanProject(props: {
 
   const sourceFiles: SourceFile[] = project.getSourceFiles();
 
-  if (log) {
-    console.log("loaded project.");
-    console.log("starting scan.");
+  // TODO - integrate ora spinner here
+  if (logLevel !== LogLevels.info) {
+    console.log("Loaded project.");
+    console.log("Starting scan.");
   }
 
   let allUnused: UnreferencedSymbol[] = [];
@@ -46,7 +48,10 @@ export function scanProject(props: {
     }
 
     // Collect all unused identifiers
-    allUnused = [...allUnused, ...scanFile({ sourceFile, projectRoot, log })];
+    allUnused = [
+      ...allUnused,
+      ...scanFile({ sourceFile, projectRoot, logLevel })
+    ];
   });
 
   return allUnused;
