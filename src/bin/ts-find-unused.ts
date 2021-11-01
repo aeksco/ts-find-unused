@@ -13,11 +13,18 @@ const packageJson = require("../../package.json");
 // Setup CLI with Commander
 const program = new Command();
 
-// // // //
-//
-//    tsconfig.json path:
-//      ts-find-unused /path/to/project --tsconfigPath=/path/to/project/tsconfig-test.json
-//
+// Logo from: https://patorjk.com/software/taag/#p=display&v=0&f=Basic&t=ts-find-unused
+// TODO - add credit to README.md
+const logoText = `
+d888888b .d8888.        d88888b d888888b d8b   db d8888b.        db    db d8b   db db    db .d8888. d88888b d8888b.
+'~~88~~' 88'  YP        88'       '88'   888o  88 88  '8D        88    88 888o  88 88    88 88'  YP 88'     88  '8D
+   88    '8bo.          88ooo      88    88V8o 88 88   88        88    88 88V8o 88 88    88 '8bo.   88ooooo 88   88
+   88      'Y8b.        88~~~      88    88 V8o88 88   88        88    88 88 V8o88 88    88   'Y8b. 88~~~~~ 88   88
+   88    db   8D        88        .88.   88  V888 88  .8D        88b  d88 88  V888 88b  d88 db   8D 88.     88  .8D
+   YP    '8888Y'        YP      Y888888P VP   V8P Y8888D'        ~Y8888P' VP   V8P ~Y8888P' '8888Y' Y88888P Y8888D'
+`;
+program.addHelpText("before", `\n${chalk.cyan(logoText)}\n`);
+
 // // // //
 
 // Setup `plugin-run` command
@@ -80,6 +87,16 @@ program
         console.log(opts);
       }
 
+      // // // //
+      // TODO - add support for tsconfig.json path
+      // TODO - add support for tsconfig.json path
+      // TODO - add support for tsconfig.json path
+      //
+      //    tsconfig.json path:
+      //      ts-find-unused /path/to/project --tsconfigPath=/path/to/project/tsconfig-test.json
+      //
+      // // // //
+
       // Pass parameters to `runCommand` to run the program
       runCommand({
         output,
@@ -93,9 +110,8 @@ program
 
 // Add help command
 program.on("--help", () => {
-  console.log();
   console.log(
-    `  Support this project at ${chalk.cyan(
+    `\n\tSupport this project at ${chalk.cyan(
       `https://github.com/aeksco/ts-find-unused`
     )}\n`
   );
