@@ -70,6 +70,11 @@ function findUnusedIdentifiers(props: {
   let symbolName = "";
   let lineNumber = -1;
 
+  if (allReferences.length === 0) {
+    console.log("SOMETHING IS WRONG WITH THIS FILE");
+    return [];
+  }
+
   if (allReferences.length === 1) {
     try {
       lineNumber = symbol.getStartLineNumber();
@@ -92,18 +97,17 @@ function findUnusedIdentifiers(props: {
   } else {
     // Copy allReferences and remove first reference (always the file where the symbol is first declared)
     const refs = [...allReferences];
-    refs.shift();
+    const ogReference = refs.shift();
 
     // Create set of unique references
     const uniqueReferences = [...new Set(refs)];
 
-    // TODO - remove notes here
-    // console.log(symbolNm)
-    // console.log(symbolNm)
-    // console.log(allReferences)
-    // console.log(uniqueReferences)
+    // TODO - remove debug statements here
+    // console.log(allReferences);
+    // console.log(ogReference);
+    // console.log(uniqueReferences);
     // console.log(validReferences)
-    // console.log(referenceIgnorePatterns)
+    // console.log(referenceIgnorePatterns);
 
     // Filter uniqueReferences to ONLY include values that are NOT matches in referenceIgnorePatterns
     const validReferences = uniqueReferences.filter((r) => {
@@ -122,13 +126,12 @@ function findUnusedIdentifiers(props: {
       }
 
       // Capture unused identifier
-      const filepath = allReferences[0];
       unusedIdentifiers.push({
         type,
-        filepath,
+        filepath: ogReference,
         lineNumber,
         label: symbolName,
-        relativePath: filepath.replace(projectRoot, ""),
+        relativePath: ogReference.replace(projectRoot, ""),
       });
     }
   }
