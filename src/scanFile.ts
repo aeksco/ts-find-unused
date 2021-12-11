@@ -6,14 +6,14 @@ import {
   ReferencedSymbol,
   SourceFile,
   TypeAliasDeclaration,
-  VariableDeclaration
+  VariableDeclaration,
 } from "ts-morph";
 import {
   SymbolType,
   SymbolTypes,
   UnreferencedSymbol,
   LogLevel,
-  LogLevels
+  LogLevels,
 } from "./types";
 
 // // // //
@@ -35,8 +35,10 @@ function findUnusedIdentifiers(props: {
   projectRoot: string;
   type: SymbolType;
   logLevel: LogLevel;
+  referenceIgnorePatterns: string[];
 }): UnreferencedSymbol[] {
-  const { symbol, projectRoot, type, logLevel } = props;
+  const { symbol, projectRoot, type, logLevel, referenceIgnorePatterns } =
+    props;
   const references: ReferencedSymbol[] = symbol.findReferences();
   // const references: ReferencedSymbol[] = project.getLanguageService().findReferences(symbol)
 
@@ -65,9 +67,10 @@ function findUnusedIdentifiers(props: {
 
   let unusedIdentifiers: UnreferencedSymbol[] = [];
 
+  let symbolName = "";
+  let lineNumber = -1;
+
   if (allReferences.length === 1) {
-    let symbolName = "";
-    let lineNumber = -1;
     try {
       lineNumber = symbol.getStartLineNumber();
       symbolName =
@@ -84,8 +87,50 @@ function findUnusedIdentifiers(props: {
       filepath,
       lineNumber,
       label: symbolName,
-      relativePath: filepath.replace(projectRoot, "")
+      relativePath: filepath.replace(projectRoot, ""),
     });
+  } else {
+    // Copy allReferences and remove first reference (always the file where the symbol is first declared)
+    const refs = [...allReferences];
+    refs.shift();
+
+    // Create set of unique references
+    const uniqueReferences = [...new Set(refs)];
+
+    // TODO - remove notes here
+    // console.log(symbolNm)
+    // console.log(symbolNm)
+    // console.log(allReferences)
+    // console.log(uniqueReferences)
+    // console.log(validReferences)
+    // console.log(referenceIgnorePatterns)
+
+    // Filter uniqueReferences to ONLY include values that are NOT matches in referenceIgnorePatterns
+    const validReferences = uniqueReferences.filter((r) => {
+      return !referenceIgnorePatterns.some((ip) => r.includes(ip));
+    });
+
+    // If there are no VALID references, mark the symbol as unused
+    if (validReferences.length === 0) {
+      try {
+        lineNumber = symbol.getStartLineNumber();
+        symbolName =
+          // @ts-ignore
+          symbol.getNodeProperty("name")._compilerNode.escapedText;
+      } catch (e) {
+        console.log("err");
+      }
+
+      // Capture unused identifier
+      const filepath = allReferences[0];
+      unusedIdentifiers.push({
+        type,
+        filepath,
+        lineNumber,
+        label: symbolName,
+        relativePath: filepath.replace(projectRoot, ""),
+      });
+    }
   }
 
   return unusedIdentifiers;
@@ -128,8 +173,9 @@ export function scanFile(props: {
         symbol,
         logLevel,
         projectRoot,
-        type: SymbolTypes.typeAlias
-      })
+        type: SymbolTypes.typeAlias,
+        referenceIgnorePatterns: [],
+      }),
     ];
   });
 
@@ -141,8 +187,9 @@ export function scanFile(props: {
         symbol,
         logLevel,
         projectRoot,
-        type: SymbolTypes.function
-      })
+        type: SymbolTypes.function,
+        referenceIgnorePatterns: [],
+      }),
     ];
   });
 
@@ -154,8 +201,9 @@ export function scanFile(props: {
         symbol,
         logLevel,
         projectRoot,
-        type: SymbolTypes.class
-      })
+        type: SymbolTypes.class,
+        referenceIgnorePatterns: [],
+      }),
     ];
   });
 
@@ -167,8 +215,9 @@ export function scanFile(props: {
         symbol,
         logLevel,
         projectRoot,
-        type: SymbolTypes.enum
-      })
+        type: SymbolTypes.enum,
+        referenceIgnorePatterns: [],
+      }),
     ];
   });
 
@@ -180,8 +229,9 @@ export function scanFile(props: {
         symbol,
         logLevel,
         projectRoot,
-        type: SymbolTypes.variable
-      })
+        type: SymbolTypes.variable,
+        referenceIgnorePatterns: ["__tests__"],
+      }),
     ];
   });
 
@@ -194,8 +244,9 @@ export function scanFile(props: {
           symbol,
           logLevel,
           projectRoot,
-          type: SymbolTypes.interface
-        })
+          type: SymbolTypes.interface,
+          referenceIgnorePatterns: [],
+        }),
       ];
     } catch (e) {
       // TODO - wrap in logLevel?
