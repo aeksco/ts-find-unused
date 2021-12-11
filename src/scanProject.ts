@@ -9,13 +9,15 @@ export function scanProject(props: {
   projectRoot: string;
   tsConfigFilePath: string;
   ignorePatterns: string[];
+  referenceIgnorePatterns: string[];
   logLevel: LogLevel;
 }): UnreferencedSymbol[] {
   const {
     projectRoot,
     tsConfigFilePath,
     ignorePatterns = [],
-    logLevel
+    referenceIgnorePatterns = [],
+    logLevel,
   } = props;
 
   // TODO - integrate ora spinner here
@@ -26,8 +28,8 @@ export function scanProject(props: {
   const project = new Project({
     tsConfigFilePath,
     compilerOptions: {
-      target: ScriptTarget.ES3
-    }
+      target: ScriptTarget.ES3,
+    },
   });
 
   const sourceFiles: SourceFile[] = project.getSourceFiles();
@@ -40,17 +42,22 @@ export function scanProject(props: {
 
   let allUnused: UnreferencedSymbol[] = [];
 
-  sourceFiles.forEach(sourceFile => {
+  sourceFiles.forEach((sourceFile) => {
     // Skip sourceFiles where filepath includes one of the ignore patterns
     const filePath = sourceFile.getFilePath();
-    if (ignorePatterns.some(ip => filePath.includes(ip))) {
+    if (ignorePatterns.some((ip) => filePath.includes(ip))) {
       return;
     }
 
     // Collect all unused identifiers
     allUnused = [
       ...allUnused,
-      ...scanFile({ sourceFile, projectRoot, logLevel })
+      ...scanFile({
+        sourceFile,
+        projectRoot,
+        logLevel,
+        referenceIgnorePatterns,
+      }),
     ];
   });
 

@@ -36,7 +36,11 @@ program
   )
   .option(
     "-i --ignore-patterns <ignorePatterns>",
-    "Ignore Patters - skip scanning files that match the a glob style pattern"
+    "Ignore Patters - skip scanning files that match the glob style pattern"
+  )
+  .option(
+    "-ri --reference-ignore-patterns <referenceIgnorePatterns>",
+    "Reference Ignore Patters - ignore references to potentially unused code in files that match the glob style pattern"
   )
   .option(
     "-o --output <output>",
@@ -60,6 +64,7 @@ program
       projectPath?: string;
       logLevel?: LogLevel;
       ignorePatterns?: string;
+      referenceIgnorePatterns?: string;
     }) => {
       const {
         output = "txt",
@@ -67,7 +72,8 @@ program
         destination = undefined,
         debug = false,
         projectPath = "./tsconfig.json",
-        ignorePatterns = ""
+        ignorePatterns = "",
+        referenceIgnorePatterns = "",
       } = opts;
 
       // Short-circuit execution if "output" option isn't valid
@@ -79,7 +85,12 @@ program
       // Split ignorePatterns text into array + remove empty strings
       const ignorePatternsArray: string[] = ignorePatterns
         .split(",")
-        .filter(i => i !== "");
+        .filter((i) => i !== "");
+
+      // Split referenceIgnorePatterns text into array + remove empty strings
+      const referenceIgnorePatternsArray: string[] = referenceIgnorePatterns
+        .split(",")
+        .filter((i) => i !== "");
 
       // Log out options if debug is "true"
       if (debug) {
@@ -103,7 +114,8 @@ program
         destination,
         projectPath,
         logLevel,
-        ignorePatterns: ignorePatternsArray
+        ignorePatterns: ignorePatternsArray,
+        referenceIgnorePatterns: referenceIgnorePatternsArray,
       });
     }
   );

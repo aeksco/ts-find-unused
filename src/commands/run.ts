@@ -13,6 +13,7 @@ function main(props: {
   projectRoot: string;
   tsConfigFile: string;
   ignorePatterns: string[];
+  referenceIgnorePatterns: string[];
   outputFormat?: OutputFormat;
   outputDestination?: string;
   logLevel: LogLevel;
@@ -22,8 +23,9 @@ function main(props: {
     projectRoot,
     tsConfigFile = "tsconfig.json",
     ignorePatterns = [],
+    referenceIgnorePatterns = [],
     outputFormat = OutputFormats.txt,
-    outputDestination = null
+    outputDestination = null,
   } = props;
 
   // TODO - this should be decoupled from main ->
@@ -32,7 +34,8 @@ function main(props: {
     projectRoot,
     tsConfigFilePath: path.resolve(projectRoot, tsConfigFile),
     ignorePatterns,
-    logLevel
+    referenceIgnorePatterns,
+    logLevel,
   });
 
   // TOOD - annotate
@@ -54,7 +57,7 @@ function main(props: {
   // Get formatted output
   const output = getOutput({
     allUnused,
-    outputFormat
+    outputFormat,
   });
 
   // Write output to outputDestination
@@ -83,6 +86,7 @@ export const runCommand = (opts: {
   destination: string | undefined;
   projectPath: string;
   ignorePatterns: string[];
+  referenceIgnorePatterns: string[];
   logLevel: LogLevel;
 }) => {
   // TODO - separate main out into separate functions here
@@ -92,7 +96,8 @@ export const runCommand = (opts: {
     outputFormat: opts.output,
     outputDestination: opts.destination,
     ignorePatterns: opts.ignorePatterns,
-    logLevel: opts.logLevel
+    referenceIgnorePatterns: opts.referenceIgnorePatterns,
+    logLevel: opts.logLevel,
   });
 };
 

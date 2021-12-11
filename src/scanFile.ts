@@ -142,8 +142,9 @@ export function scanFile(props: {
   sourceFile: SourceFile;
   projectRoot: string;
   logLevel: LogLevel;
+  referenceIgnorePatterns: string[];
 }): UnreferencedSymbol[] {
-  const { sourceFile, projectRoot, logLevel } = props;
+  const { sourceFile, projectRoot, logLevel, referenceIgnorePatterns } = props;
   const classes: ClassDeclaration[] = sourceFile.getClasses();
   const interfaces: InterfaceDeclaration[] = sourceFile.getInterfaces();
   const typeAliases: TypeAliasDeclaration[] = sourceFile.getTypeAliases();
@@ -173,8 +174,8 @@ export function scanFile(props: {
         symbol,
         logLevel,
         projectRoot,
+        referenceIgnorePatterns,
         type: SymbolTypes.typeAlias,
-        referenceIgnorePatterns: [],
       }),
     ];
   });
@@ -187,8 +188,8 @@ export function scanFile(props: {
         symbol,
         logLevel,
         projectRoot,
+        referenceIgnorePatterns,
         type: SymbolTypes.function,
-        referenceIgnorePatterns: [],
       }),
     ];
   });
@@ -201,8 +202,8 @@ export function scanFile(props: {
         symbol,
         logLevel,
         projectRoot,
+        referenceIgnorePatterns,
         type: SymbolTypes.class,
-        referenceIgnorePatterns: [],
       }),
     ];
   });
@@ -215,8 +216,8 @@ export function scanFile(props: {
         symbol,
         logLevel,
         projectRoot,
+        referenceIgnorePatterns,
         type: SymbolTypes.enum,
-        referenceIgnorePatterns: [],
       }),
     ];
   });
@@ -229,8 +230,8 @@ export function scanFile(props: {
         symbol,
         logLevel,
         projectRoot,
+        referenceIgnorePatterns,
         type: SymbolTypes.variable,
-        referenceIgnorePatterns: ["__tests__"],
       }),
     ];
   });
@@ -244,8 +245,8 @@ export function scanFile(props: {
           symbol,
           logLevel,
           projectRoot,
+          referenceIgnorePatterns,
           type: SymbolTypes.interface,
-          referenceIgnorePatterns: [],
         }),
       ];
     } catch (e) {
