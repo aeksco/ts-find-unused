@@ -90,6 +90,10 @@ You can then run the `yarn find-unused` command to run `ts-find-unused` against 
 
 - `ts-find-unused /path/to/project --ignorePatterns=__tests__,stories`
 
+**Reference Ignore Patterns** (comma separated)
+
+- `ts-find-unused /path/to/project --reference-ignore-patterns=index.ts`
+
 **Output Format**
 
 - `ts-find-unused /path/to/project --outputFormat=txt` (default)

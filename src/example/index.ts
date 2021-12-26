@@ -7,3 +7,6 @@ export enum UnusedEnum {
   foo = "foo",
   bar = "bar",
 }
+
+// TODO - this should be caught
+export { UnusedExportFromModule } from "./source";
