@@ -18,10 +18,10 @@ CLI tool to find unused code in TypeScript projects
 
 - Documentation
 
-  - Add proper header to `README.md`
-  - Add `Installation Instructions` to `README.md` (just use `npx`?)
-  - Add `CONTRIBUTING.md`
-  - Add `CODE_OF_CONDUCT.md`
+  - [IN_PROGRESS] Add proper header to `README.md`
+  - [IN_PROGRESS] Add `Installation Instructions` to `README.md` (just use `npx`?)
+  - [READY] Add `CONTRIBUTING.md`
+  - [READY] Add `CODE_OF_CONDUCT.md`
   - Add `License` section to `README.md`
   - Add `Built by @aeksco` to `README.md`
 
@@ -45,6 +45,28 @@ CLI tool to find unused code in TypeScript projects
 
 - Update repo to scan for `.ts-find-unused.js` config
 - Update to function as monorepo - add `core`, `cli`, `vscode-extension` packages
+
+---
+
+### Installation & Usage
+
+You can run the CLI app locally using [npx]():
+
+```
+npx ts-find-unused
+```
+
+You can also install `ts-find-unused` as a development dependency in your TypeScript project and run it using an NPM script defined in your `package.json` file:
+
+```json
+{
+  "scripts": {
+    "find-unused": "ts-find-unused"
+  }
+}
+```
+
+You can then run the `yarn find-unused` command to run `ts-find-unused` against your project.
 
 ---
 
@@ -106,3 +128,7 @@ node ./bin/ts-find-unused.js
 - [Jest](https://jestjs.io/)
 - [Prettier](http://prettier.io/)
 - [ts-morph](https://github.com/dsherret/ts-morph)
+
+### License
+
+Released and distributed under the [MIT License](https://github.com/aeksco/ts-find-unused/blob/main/LICENSE). Build with :heart: by [@aeksco](https://twitter.com/aeksco).
