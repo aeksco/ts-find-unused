@@ -22,8 +22,8 @@ CLI tool to find unused code in TypeScript projects
   - [IN_PROGRESS] Add `Installation Instructions` to `README.md` (just use `npx`?)
   - [READY] Add `CONTRIBUTING.md`
   - [READY] Add `CODE_OF_CONDUCT.md`
+  - [IN_PROGRESS] Add PR template
   - [READY] Add issue template
-  - [READY] Add PR template
   - [READY] Add .vscode directory w/ recommended extensions
   - [READY] Add .github/DONATE configuration
 
@@ -53,7 +53,7 @@ CLI tool to find unused code in TypeScript projects
 You can run the CLI app locally using [npx](https://www.npmjs.com/package/npx):
 
 ```console
-aeksco@local:[my-project]$ npx ts-find-unused [...options]
+[aeksco@local][my-project]$ npx ts-find-unused [...options]
 ```
 
 You can also install `ts-find-unused` as a development dependency in your TypeScript project and run it using an NPM script defined in your `package.json` file:
