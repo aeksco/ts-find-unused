@@ -24,13 +24,26 @@ CLI tool to find unused code in TypeScript projects
   - Add `CODE_OF_CONDUCT.md`
   - Add `License` section to `README.md`
   - Add `Built by @aeksco` to `README.md`
+
   - Add remaining GitHub community files
+
   - Link issue requesting feedback to VSCode Extension
-  - Finalize name of project (maybe rename to `ts-tidy` / `ts-tidy-up` / `tidy-up-ts` / `typescript-tidy` / `tidy-typescript` / `@ts-tidy/cli`)
+
+  - Finalize name of project?
+
+    - `ts-find-unused`
+    - `ts-tidy`
+    - `ts-tidy-up`
+    - `tidy-up-ts`
+    - `typescript-tidy`
+    - `tidy-typescript`
+    - `@ts-tidy/cli`
+
   - Layout release plan
 
 ### TODOs - Stretch Goals
 
+- Update repo to scan for `.ts-find-unused.js` config
 - Update to function as monorepo - add `core`, `cli`, `vscode-extension` packages
 
 ---
@@ -70,6 +83,20 @@ CLI tool to find unused code in TypeScript projects
 - `ts-find-unused /path/to/project --outputFormat=markdown --outputDestination=./unused.md`
 
 - `ts-find-unused /path/to/project --outputFormat=json --outputDestination=./unused.json`
+
+### Developing
+
+Run `yarn build` to build the CLI app locally:
+
+```
+yarn build
+```
+
+You can run the CLI app locally like so:
+
+```
+node ./bin/ts-find-unused.js
+```
 
 ### Built With
 
