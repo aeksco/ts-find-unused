@@ -21,7 +21,6 @@ CLI tool to find unused code in TypeScript projects
   - [IN_PROGRESS] Add proper header to `README.md`
   - [IN_PROGRESS] Add `Installation Instructions` to `README.md` (just use `npx`?)
   - [READY] Add `CONTRIBUTING.md`
-  - [READY] Add `CODE_OF_CONDUCT.md`
   - [IN_PROGRESS] Add PR template
   - [READY] Add issue template
   - [READY] Add .vscode directory w/ recommended extensions
