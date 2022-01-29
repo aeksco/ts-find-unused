@@ -28,6 +28,7 @@ export function scanFile(props: {
 
   // TODO - annotate this
   if (logLevel === LogLevels.verbose) {
+    console.log("- - - - - - - - - - - - - - - - - - - -");
     console.log("Checking ", sourceFile.getFilePath());
     console.log("interfaces", interfaces.length);
     console.log("classes", classes.length);
@@ -36,6 +37,7 @@ export function scanFile(props: {
     console.log("functions", functions.length);
     console.log("variables", variables.length);
     console.log("\n");
+    console.log("- - - - - - - - - - - - - - - - - - - -");
   }
 
   let unusedIdentifiers: UnreferencedSymbol[] = [];

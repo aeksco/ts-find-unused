@@ -73,6 +73,7 @@ program
       ignorePatterns?: string;
       referenceIgnorePatterns?: string;
     }) => {
+      // TODO - pull this into a parseConfig function
       let {
         output = "txt",
         logLevel = LogLevels.none,

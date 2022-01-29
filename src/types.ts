@@ -10,7 +10,7 @@ export type OutputFormat = "txt" | "markdown" | "json";
 export enum OutputFormats {
   txt = "txt",
   markdown = "markdown",
-  json = "json"
+  json = "json",
 }
 
 /**
@@ -21,7 +21,7 @@ export type LogLevel = "none" | "info" | "verbose";
 export enum LogLevels {
   none = "none",
   info = "info",
-  verbose = "verbose"
+  verbose = "verbose",
 }
 
 /**
@@ -41,7 +41,7 @@ export enum SymbolTypes {
   enum = "enum",
   function = "function",
   typeAlias = "type-alias",
-  variable = "variable"
+  variable = "variable",
 }
 
 /**

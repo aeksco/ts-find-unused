@@ -1,6 +1,7 @@
 module.exports = {
     // output: "txt",
-    // logLevel: LogLevels.none,
+    // logLevel: "verbose",
+    logLevel: "none",
     // destination: undefined,
     debug: false,
     projectPath: "./tsconfig.json",
