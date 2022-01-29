@@ -4,6 +4,8 @@
 // The user may be on a very old node version
 // import minimist from "minimist";
 import { Command } from "commander";
+import { resolve } from "path";
+import { existsSync } from "fs";
 import chalk from "chalk";
 import { runCommand } from "../commands/run";
 import { LogLevels, LogLevel } from "../types";
@@ -54,6 +56,10 @@ program
     "-l --logLevel <logLevel>",
     "Log Level - choose level of program logs none|info|verbose (default: none)"
   )
+  .option(
+    "-c --config <path>",
+    "Config - Optional filepath to a .ts-find-unused.js configuration file (default: .ts-find-unused.config.js)"
+  )
   .option("--debug", "Debug - debug CLI options")
   .description("Run the ts-find-unused program")
   .action(
@@ -63,18 +69,74 @@ program
       debug?: boolean;
       projectPath?: string;
       logLevel?: LogLevel;
+      config?: string;
       ignorePatterns?: string;
       referenceIgnorePatterns?: string;
     }) => {
-      const {
+      let {
         output = "txt",
         logLevel = LogLevels.none,
         destination = undefined,
         debug = false,
         projectPath = "./tsconfig.json",
+        config = "./.ts-find-unused.config.js",
         ignorePatterns = "",
         referenceIgnorePatterns = "",
       } = opts;
+
+      // // // //
+      // TODO - add support for config file
+      console.log("config??");
+      console.log(config);
+
+      // Defines the path to the config file
+      const configPath = resolve(process.cwd(), config);
+
+      // Check if config file exists
+      if (existsSync(configPath)) {
+        console.log("CONFIGURATION EXISTS!");
+        console.log(configPath);
+        // Attempt to load .ts-find-unused.config.js
+        try {
+          // Load the config via configPath
+          const configValues = require(configPath);
+
+          // TODO - add log level to this?
+          console.log(`Loaded config from ${config}`);
+
+          // TODO - add log level to this
+          // console.log("configValues");
+          // console.log(configValues);
+
+          // TODO - validate config file
+          // TODO - validate config file
+          // TODO - validate config file
+
+          // Overwrite defaults from configValues
+          output = configValues.output || output;
+          logLevel = configValues.logLevel || logLevel;
+          destination = configValues.destination || destination;
+          debug = configValues.debug || debug;
+          projectPath = configValues.projectPath || projectPath;
+
+          // Parse ignorePatterns
+          if (Array.isArray(configValues.ignorePatterns)) {
+            ignorePatterns = configValues.ignorePatterns.join(",");
+          }
+
+          // Parse referenceIgnorePatterns
+          if (Array.isArray(configValues.referenceIgnorePatterns)) {
+            referenceIgnorePatterns =
+              configValues.referenceIgnorePatterns.join(",");
+          }
+        } catch (e) {
+          // TODO - add log level constraint to this
+          console.log("Config could not be loaded!");
+          console.log(e);
+        }
+      }
+
+      // // // //
 
       // Short-circuit execution if "output" option isn't valid
       if (["markdown", "json", "txt"].indexOf(output) === -1) {

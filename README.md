@@ -25,6 +25,8 @@ CLI tool to find unused code in TypeScript projects
   - [READY] Add issue template
   - [READY] Add .vscode directory w/ recommended extensions
   - [READY] Add .github/DONATE configuration
+  - [READY] Update repo to scan for `.ts-find-unused.js` config
+  - [READY] Add option to fail when unused code is detected?
 
   - Link issue requesting feedback to VSCode Extension
 
@@ -42,7 +44,6 @@ CLI tool to find unused code in TypeScript projects
 
 ### TODOs - Stretch Goals
 
-- Update repo to scan for `.ts-find-unused.js` config
 - Update to function as monorepo - add `core`, `cli`, `vscode-extension` packages?
 
 ---
