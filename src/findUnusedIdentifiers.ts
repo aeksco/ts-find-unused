@@ -11,9 +11,35 @@ import { SymbolType, UnreferencedSymbol, LogLevel, LogLevels } from "./types";
 
 // // // //
 
-interface ReferenceObj {
+/**
+ * Type-union for the different symbols we lookup
+ */
+type Symbol =
+  | TypeAliasDeclaration
+  | FunctionDeclaration
+  | ClassDeclaration
+  | EnumDeclaration
+  | InterfaceDeclaration
+  | VariableDeclaration;
+
+/**
+ * Interface for tracking a reference to a symbol
+ */
+interface TrackedReference {
   path: string;
   isDefinition: boolean;
+}
+
+/**
+ * Gets the human-readable name of a symbol within the codebase
+ */
+function getSymbolName(symbol: Symbol): string {
+  try {
+    // @ts-ignore
+    return symbol.getNodeProperty("name")._compilerNode.escapedText;
+  } catch (e) {
+    return "";
+  }
 }
 
 /**
@@ -37,56 +63,44 @@ export function findUnusedIdentifiers(props: {
 }): UnreferencedSymbol[] {
   const { symbol, projectRoot, type, logLevel, referenceIgnorePatterns } =
     props;
-  // @ts-ignore
-  const references: ReferencedSymbol[] = symbol.findReferences();
-  // const references: ReferencedSymbol[] = project.getLanguageService().findReferences(symbol)
 
-  // TODO - annotate
+  // Lookup array of references
+  const references: ReferencedSymbol[] = symbol.findReferences();
+
+  // Log start message with verbose logLevel
   if (logLevel === LogLevels.verbose) {
     console.log("- - - - - - - - - - - - - - - - - - - -");
-    console.log("findUnusedIdentifiers:");
-    console.log(`type: ${type}`);
-    // @ts-ignore
-    console.log(symbol.getNodeProperty("name")._compilerNode.escapedText);
+    console.log(`findUnusedIdentifiers: ${getSymbolName(symbol)}`);
     console.log("- - - - - - - - - - - - - - - - - - - -");
   }
 
   // Log detailed output of each reference
-  let allReferences: ReferenceObj[] = [];
+  let allReferences: TrackedReference[] = [];
   for (const ref of references) {
     for (const r of ref.getReferences()) {
-      // TODO - annotate
-      if (logLevel === LogLevels.verbose) {
-        console.log("Each reference:");
-        console.log(r);
-      }
-
-      // ORIG
+      // Push each reference into the allReferences array
       allReferences.push({
         path: r.getSourceFile().getFilePath(),
-        // @ts-ignore
-        isDefinition: r._compilerObject.isDefinition,
+        isDefinition: r.compilerObject.isDefinition,
       });
-
-      if (logLevel === LogLevels.verbose) {
-        console.log(r.getSourceFile().getFilePath());
-      }
     }
   }
 
+  // Log number of references found IFF logLevel is verbose
   if (logLevel !== LogLevels.none) {
-    console.log(`Find references: ${allReferences.length}`);
+    console.log(`Found references: ${allReferences.length}`);
   }
 
+  // Define local variables for unused identifier
   let unusedIdentifiers: UnreferencedSymbol[] = [];
-
   let symbolName = "";
   let lineNumber = -1;
 
-  // TODO - annotate
+  // Log error message and return empty array if there are no references
   if (allReferences.length === 0) {
-    // TODO - clean up this error message
-    console.log("SOMETHING IS WRONG WITH THIS FILE");
+    if (logLevel === LogLevels.verbose) {
+      console.log("Something is wrong - no references found for source file");
+    }
     return [];
   }
 
@@ -96,15 +110,16 @@ export function findUnusedIdentifiers(props: {
     (r) => r.isDefinition === false
   );
 
+  // Mark as unused if there is only ONE reference (or zero non-definition references)
   if (allReferences.length === 1 || nonDefinitionReferences.length === 0) {
     try {
       lineNumber = symbol.getStartLineNumber();
-      symbolName =
-        // @ts-ignore
-        symbol.getNodeProperty("name")._compilerNode.escapedText;
+      symbolName = getSymbolName(symbol);
     } catch (e) {
-      // TODO - improve error message here
-      console.log("err");
+      // Log warning message if symbol name cannot be found
+      if (logLevel === LogLevels.verbose) {
+        console.log("Warning - error looking up name of property");
+      }
     }
 
     // Capture unused identifier
@@ -118,22 +133,15 @@ export function findUnusedIdentifiers(props: {
     });
   } else {
     // Copy allReferences and remove first reference (always the file where the symbol is first declared)
-    const refs: ReferenceObj[] = [...allReferences];
+    const refs: TrackedReference[] = [...allReferences];
     const ogReference = refs.shift();
 
     // Create set of unique references
-    const uniqueReferences: ReferenceObj[] = [
+    const uniqueReferences: TrackedReference[] = [
       ...new Set(refs.map((r) => r.path)),
     ].map((p) => {
       return allReferences.find((r) => r.path === p);
     });
-
-    // TODO - remove debug statements here
-    // console.log(allReferences);
-    // console.log(ogReference);
-    // console.log(uniqueReferences);
-    // console.log(validReferences)
-    // console.log(referenceIgnorePatterns);
 
     // Filter uniqueReferences to ONLY include values that are NOT matches in referenceIgnorePatterns
     const validReferences = uniqueReferences.filter((r) => {
@@ -144,9 +152,7 @@ export function findUnusedIdentifiers(props: {
     if (validReferences.length === 0) {
       try {
         lineNumber = symbol.getStartLineNumber();
-        symbolName =
-          // @ts-ignore
-          symbol.getNodeProperty("name")._compilerNode.escapedText;
+        symbolName = getSymbolName(symbol);
       } catch (e) {
         console.log("err");
       }

@@ -12,6 +12,9 @@ import { findUnusedIdentifiers } from "./findUnusedIdentifiers";
 
 // // // //
 
+/**
+ * Scan an individual file in the TS project
+ */
 export function scanFile(props: {
   sourceFile: SourceFile;
   projectRoot: string;
@@ -26,7 +29,7 @@ export function scanFile(props: {
   const functions: FunctionDeclaration[] = sourceFile.getFunctions();
   const variables: VariableDeclaration[] = sourceFile.getVariableDeclarations();
 
-  // TODO - annotate this
+  // Lots details of scanFile to the console with verbose LogLevel
   if (logLevel === LogLevels.verbose) {
     console.log("- - - - - - - - - - - - - - - - - - - -");
     console.log("Checking ", sourceFile.getFilePath());
@@ -40,6 +43,7 @@ export function scanFile(props: {
     console.log("- - - - - - - - - - - - - - - - - - - -");
   }
 
+  // Defines array of unused identifiers within the file
   let unusedIdentifiers: UnreferencedSymbol[] = [];
 
   // Find unused type aliases
@@ -126,10 +130,13 @@ export function scanFile(props: {
         }),
       ];
     } catch (e) {
-      // TODO - wrap in logLevel?
-      console.log("Warning: interface lookup err");
+      // Log interface lookup error
+      if (logLevel === LogLevels.verbose) {
+        console.log("Warning: interface lookup err");
+      }
     }
   });
 
+  // Return all unused identifiers for this file
   return unusedIdentifiers;
 }
