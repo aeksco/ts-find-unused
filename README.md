@@ -6,9 +6,7 @@ CLI tool to find unused code in TypeScript projects
 
 ### TODOs
 
-- Add remaining CLI options
-
-- Add a few tests
+- Add remaining CLI options - what else here????
 
 - Add error handling when `tsconfig.json` can't be found
 
@@ -42,10 +40,6 @@ CLI tool to find unused code in TypeScript projects
     - `@ts-tidy/cli`
 
   - Layout release plan
-
-### TODOs - Stretch Goals
-
-- Update to function as monorepo - add `core`, `cli`, `vscode-extension` packages?
 
 ---
 
@@ -82,10 +76,6 @@ You can then run the `yarn find-unused` command to run `ts-find-unused` against 
 - `ts-find-unused /path/to/project --debug`
 
 - `ts-find-unused /path/to/project -d`
-
-**tsconfig.json path:** (todo - make this the default?)
-
-- `ts-find-unused /path/to/project --tsconfigPath=/path/to/project/tsconfig-test.json`
 
 **Ignore Patterns** (comma separated)
 

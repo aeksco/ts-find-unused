@@ -9,6 +9,9 @@ import { printToStdout } from "../printToStdout";
 
 // // // //
 
+/**
+ * Main program function
+ */
 function main(props: {
   projectRoot: string;
   tsConfigFile: string;
@@ -37,12 +40,6 @@ function main(props: {
     referenceIgnorePatterns,
     logLevel,
   });
-
-  // TOOD - annotate
-  if (logLevel !== LogLevels.none) {
-    console.log("allUnused");
-    console.log(allUnused);
-  }
 
   // Log no-unused-code-found message
   if (allUnused.length === 0) {

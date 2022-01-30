@@ -50,7 +50,7 @@ program
   )
   .option(
     "-d --destination <destination>",
-    "Optional filepath to write the output instead of logging to stdout"
+    "Destination - optional filepath to write the output instead of logging to stdout"
   )
   .option(
     "-l --logLevel <logLevel>",
@@ -58,7 +58,7 @@ program
   )
   .option(
     "-c --config <path>",
-    "Config - Optional filepath to a .ts-find-unused.js configuration file (default: .ts-find-unused.config.js)"
+    "Config - optional filepath to a .ts-find-unused.js configuration file (default: .ts-find-unused.config.js)"
   )
   .option("--debug", "Debug - debug CLI options")
   .description("Run the ts-find-unused program")
