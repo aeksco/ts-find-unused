@@ -16,7 +16,7 @@ const packageJson = require("../../package.json");
 const program = new Command();
 
 // Logo from: https://patorjk.com/software/taag/#p=display&v=0&f=Basic&t=ts-find-unused
-// TODO - add credit to README.md
+// FEATURE - add credit to README.md
 const logoText = `
 d888888b .d8888.        d88888b d888888b d8b   db d8888b.        db    db d8b   db db    db .d8888. d88888b d8888b.
 '~~88~~' 88'  YP        88'       '88'   888o  88 88  '8D        88    88 888o  88 88    88 88'  YP 88'     88  '8D
@@ -73,7 +73,7 @@ program
       ignorePatterns?: string;
       referenceIgnorePatterns?: string;
     }) => {
-      // TODO - pull this into a parseConfig function
+      // FEATURE - pull this into a parseConfig function
       let {
         output = "txt",
         logLevel = LogLevels.none,
@@ -85,33 +85,22 @@ program
         referenceIgnorePatterns = "",
       } = opts;
 
-      // // // //
-      // TODO - add support for config file
-      console.log("config??");
-      console.log(config);
-
       // Defines the path to the config file
       const configPath = resolve(process.cwd(), config);
 
       // Check if config file exists
       if (existsSync(configPath)) {
-        console.log("CONFIGURATION EXISTS!");
-        console.log(configPath);
         // Attempt to load .ts-find-unused.config.js
         try {
           // Load the config via configPath
           const configValues = require(configPath);
 
-          // TODO - add log level to this?
-          console.log(`Loaded config from ${config}`);
+          // Log "loaded config" message
+          if (logLevel !== LogLevels.none) {
+            console.log(`Loaded config from ${config}`);
+          }
 
-          // TODO - add log level to this
-          // console.log("configValues");
-          // console.log(configValues);
-
-          // TODO - validate config file
-          // TODO - validate config file
-          // TODO - validate config file
+          // FEATURE - validate config file contents
 
           // Overwrite defaults from configValues
           output = configValues.output || output;
@@ -131,9 +120,10 @@ program
               configValues.referenceIgnorePatterns.join(",");
           }
         } catch (e) {
-          // TODO - add log level constraint to this
-          console.log("Config could not be loaded!");
-          console.log(e);
+          // Log config-not-found message
+          if (logLevel !== LogLevels.none) {
+            console.log("Config could not be loaded!");
+          }
         }
       }
 
@@ -162,9 +152,7 @@ program
       }
 
       // // // //
-      // TODO - add support for tsconfig.json path
-      // TODO - add support for tsconfig.json path
-      // TODO - add support for tsconfig.json path
+      // FEATURE - add support for tsconfig.json path
       //
       //    tsconfig.json path:
       //      ts-find-unused /path/to/project --tsconfigPath=/path/to/project/tsconfig-test.json

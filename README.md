@@ -27,6 +27,7 @@ CLI tool to find unused code in TypeScript projects
   - [READY] Add .github/DONATE configuration
   - [READY] Update repo to scan for `.ts-find-unused.js` config
   - [READY] Add option to fail when unused code is detected?
+  - [READY] Add note -> you will need `noUnusedLocals` turned on in your `tsconfig.json` to find unused locals.
 
   - Link issue requesting feedback to VSCode Extension
 

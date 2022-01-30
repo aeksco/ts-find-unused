@@ -20,11 +20,12 @@ export function scanProject(props: {
     logLevel,
   } = props;
 
-  // TODO - integrate ora spinner here
-  if (logLevel !== LogLevels.info) {
+  // FEATURE - integrate loading spinner here
+  if (logLevel !== LogLevels.none) {
     console.log("Loading project...");
   }
 
+  // Instantiates new ts-morph project
   const project = new Project({
     tsConfigFilePath,
     compilerOptions: {
@@ -32,16 +33,19 @@ export function scanProject(props: {
     },
   });
 
+  // Collects array of source files
   const sourceFiles: SourceFile[] = project.getSourceFiles();
 
-  // TODO - integrate ora spinner here
-  if (logLevel !== LogLevels.info) {
+  // FEATURE - integrate loading spinner here
+  if (logLevel !== LogLevels.none) {
     console.log("Loaded project.");
     console.log("Starting scan.");
   }
 
+  // Define array to capture all unused symbols in the project
   let allUnused: UnreferencedSymbol[] = [];
 
+  // Iterate over each source file to collect unused symbols
   sourceFiles.forEach((sourceFile) => {
     // Skip sourceFiles where filepath includes one of the ignore patterns
     const filePath = sourceFile.getFilePath();
@@ -61,5 +65,6 @@ export function scanProject(props: {
     ];
   });
 
+  // Return array of unused symbols
   return allUnused;
 }

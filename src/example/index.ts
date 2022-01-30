@@ -8,5 +8,9 @@ export enum UnusedEnum {
   bar = "bar",
 }
 
-// TODO - this should be caught
+// This is an unused export
 export { UnusedExportFromModule } from "./source";
+
+// Unused locals
+const foo = "1234";
+const bar = "1234";

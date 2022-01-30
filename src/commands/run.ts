@@ -28,7 +28,7 @@ function main(props: {
     outputDestination = null,
   } = props;
 
-  // TODO - this should be decoupled from main ->
+  // FEATURE - this should be decoupled from main ->
   // just have a separate function that accpets the output and writes it.
   const allUnused = scanProject({
     projectRoot,
@@ -76,10 +76,7 @@ function main(props: {
 // // // //
 
 /**
- * runCommand
- * TODO - annotate
- * TODO - annotate
- * TODO - annotate
+ * Runs the `main` script from the command line
  */
 export const runCommand = (opts: {
   output: "txt" | "json" | "markdown";
@@ -89,7 +86,6 @@ export const runCommand = (opts: {
   referenceIgnorePatterns: string[];
   logLevel: LogLevel;
 }) => {
-  // TODO - separate main out into separate functions here
   main({
     projectRoot: process.cwd(),
     tsConfigFile: "tsconfig.json",
@@ -100,13 +96,3 @@ export const runCommand = (opts: {
     logLevel: opts.logLevel,
   });
 };
-
-// // // //
-// // // //
-// // // //
-// // // //
-// // // //
-
-// TODO - remove this - just here for testing this project against...this project
-const foo = "1234";
-const bar = "1234";
