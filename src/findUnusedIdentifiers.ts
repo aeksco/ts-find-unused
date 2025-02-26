@@ -38,7 +38,10 @@ function getSymbolName(symbol: Symbol): string {
     // @ts-ignore
     return symbol.getNodeProperty("name")._compilerNode.escapedText;
   } catch (e) {
-    return "";
+    if (symbol && typeof symbol.getName === 'function') {
+      return symbol.getName();
+    }
+    return "unknown";
   }
 }
 
@@ -99,7 +102,7 @@ export function findUnusedIdentifiers(props: {
   // Log error message and return empty array if there are no references
   if (allReferences.length === 0) {
     if (logLevel === LogLevels.verbose) {
-      console.log("Something is wrong - no references found for source file");
+      console.log(`Warning: No references found for symbol ${getSymbolName(symbol)} in ${symbol.getSourceFile().getFilePath()}`);
     }
     return [];
   }
@@ -118,8 +121,9 @@ export function findUnusedIdentifiers(props: {
     } catch (e) {
       // Log warning message if symbol name cannot be found
       if (logLevel === LogLevels.verbose) {
-        console.log("Warning - error looking up name of property");
+        console.log(`Warning: Error looking up name of property: ${e.message}`);
       }
+      symbolName = "unknown";
     }
 
     // Capture unused identifier
@@ -145,7 +149,15 @@ export function findUnusedIdentifiers(props: {
 
     // Filter uniqueReferences to ONLY include values that are NOT matches in referenceIgnorePatterns
     const validReferences = uniqueReferences.filter((r) => {
-      return !referenceIgnorePatterns.some((ip) => r.path.includes(ip));
+      // Make sure r is defined before trying to access its properties
+      if (!r) return false;
+      
+      // Check if the reference path matches any of the ignore patterns
+      return !referenceIgnorePatterns.some((ip) => {
+        // Make sure the ignore pattern is not empty
+        if (!ip) return false;
+        return r.path.includes(ip);
+      });
     });
 
     // If there are no VALID references, mark the symbol as unused
@@ -154,7 +166,11 @@ export function findUnusedIdentifiers(props: {
         lineNumber = symbol.getStartLineNumber();
         symbolName = getSymbolName(symbol);
       } catch (e) {
-        console.log("err");
+        if (logLevel === LogLevels.verbose) {
+          console.log(`Error looking up symbol information: ${e.message}`);
+        }
+        symbolName = "unknown";
+        lineNumber = 0;
       }
 
       // Capture unused identifier

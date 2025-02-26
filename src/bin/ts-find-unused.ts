@@ -11,6 +11,124 @@ import { runCommand } from "../commands/run";
 import { LogLevels, LogLevel } from "../types";
 const packageJson = require("../../package.json");
 
+/**
+ * Parse configuration from config file and command line options
+ */
+function parseConfig(opts: {
+  output?: "markdown" | "txt" | "json";
+  destination?: string;
+  debug?: boolean;
+  projectPath?: string;
+  tsconfigPath?: string;
+  logLevel?: LogLevel;
+  config?: string;
+  ignorePatterns?: string;
+  referenceIgnorePatterns?: string;
+  failOnFound?: boolean;
+}) {
+  // Set default values
+  let {
+    output = "txt",
+    logLevel = LogLevels.none,
+    destination = undefined,
+    debug = false,
+    projectPath = ".",
+    tsconfigPath = "./tsconfig.json",
+    config = "./.ts-find-unused.config.js",
+    ignorePatterns = "",
+    referenceIgnorePatterns = "",
+    failOnFound = false,
+  } = opts;
+
+  // Defines the path to the config file
+  const configPath = resolve(process.cwd(), config);
+
+  // Check if config file exists
+  if (existsSync(configPath)) {
+    // Attempt to load .ts-find-unused.config.js
+    try {
+      // Load the config via configPath
+      const configValues = require(configPath);
+
+      // Log "loaded config" message
+      if (logLevel !== LogLevels.none) {
+        console.log(`Loaded config from ${config}`);
+      }
+
+      // Overwrite defaults from configValues
+      output = configValues.output || output;
+      logLevel = configValues.logLevel || logLevel;
+      destination = configValues.destination || destination;
+      debug = configValues.debug || debug;
+      projectPath = configValues.projectPath || projectPath;
+      tsconfigPath = configValues.tsconfigPath || tsconfigPath;
+      failOnFound = configValues.failOnFound || failOnFound;
+
+      // Parse ignorePatterns
+      if (Array.isArray(configValues.ignorePatterns)) {
+        ignorePatterns = configValues.ignorePatterns.join(",");
+      } else if (configValues.ignorePatterns) {
+        ignorePatterns = configValues.ignorePatterns;
+      }
+
+      // Parse referenceIgnorePatterns
+      if (Array.isArray(configValues.referenceIgnorePatterns)) {
+        referenceIgnorePatterns =
+          configValues.referenceIgnorePatterns.join(",");
+      } else if (configValues.referenceIgnorePatterns) {
+        referenceIgnorePatterns = configValues.referenceIgnorePatterns;
+      }
+    } catch (e) {
+      // Log config-not-found message
+      if (logLevel !== LogLevels.none) {
+        console.log("Config could not be loaded!");
+      }
+    }
+  }
+
+  // Override with command line arguments if provided
+  ignorePatterns = opts.ignorePatterns || ignorePatterns;
+  referenceIgnorePatterns = opts.referenceIgnorePatterns || referenceIgnorePatterns;
+
+  // Split ignorePatterns text into array + remove empty strings
+  const ignorePatternsArray: string[] = ignorePatterns
+    .split(",")
+    .filter((i) => i !== "");
+
+  // Split referenceIgnorePatterns text into array + remove empty strings
+  const referenceIgnorePatternsArray: string[] = referenceIgnorePatterns
+    .split(",")
+    .filter((i) => i !== "");
+
+  // If debug is enabled, log the configuration
+  if (debug) {
+    console.log("Debug CLI options:");
+    console.log({
+      output,
+      logLevel,
+      destination,
+      debug,
+      projectPath,
+      tsconfigPath,
+      ignorePatterns: ignorePatternsArray,
+      referenceIgnorePatterns: referenceIgnorePatternsArray,
+      failOnFound
+    });
+  }
+
+  return {
+    output,
+    logLevel,
+    destination,
+    debug,
+    projectPath,
+    tsconfigPath,
+    ignorePatterns: ignorePatternsArray,
+    referenceIgnorePatterns: referenceIgnorePatternsArray,
+    failOnFound
+  };
+}
+
 // // // //
 // Setup CLI with Commander
 const program = new Command();
@@ -33,19 +151,23 @@ program.addHelpText("before", `\n${chalk.cyan(logoText)}\n`);
 program
   .version(String(packageJson.version))
   .option(
-    "-p --project-path <tsconfigFile>",
-    "Optional filepath to write the output instead of logging to stdout"
+    "-p, --project-path <projectPath>",
+    "Path to the project directory (default: current directory)"
   )
   .option(
-    "-i --ignore-patterns <ignorePatterns>",
-    "Ignore Patters - skip scanning files that match the glob style pattern"
+    "-t, --tsconfig-path <tsconfigPath>",
+    "Path to the tsconfig.json file (default: ./tsconfig.json)"
   )
   .option(
-    "-ri --reference-ignore-patterns <referenceIgnorePatterns>",
-    "Reference Ignore Patters - ignore references to potentially unused code in files that match the glob style pattern"
+    "-i, --ignore-patterns <ignorePatterns>",
+    "Ignore Patterns - skip scanning files that match the glob style pattern"
   )
   .option(
-    "-o --output <output>",
+    "-ri, --reference-ignore-patterns <referenceIgnorePatterns>",
+    "Reference Ignore Patterns - ignore references to potentially unused code in files that match the glob style pattern"
+  )
+  .option(
+    "-o, --output <output>",
     "Output - choose output format txt|markdown|json (default: txt)"
   )
   .option(
@@ -61,6 +183,10 @@ program
     "Config - optional filepath to a .ts-find-unused.js configuration file (default: .ts-find-unused.config.js)"
   )
   .option("--debug", "Debug - debug CLI options")
+  .option(
+    "--fail-on-found",
+    "Exit with error code 1 if unused code is found (useful for CI/CD pipelines)"
+  )
   .description("Run the ts-find-unused program")
   .action(
     (opts: {
@@ -68,106 +194,30 @@ program
       destination?: string;
       debug?: boolean;
       projectPath?: string;
+      tsconfigPath?: string;
       logLevel?: LogLevel;
       config?: string;
       ignorePatterns?: string;
       referenceIgnorePatterns?: string;
+      failOnFound?: boolean;
     }) => {
-      // FEATURE - pull this into a parseConfig function
-      let {
-        output = "txt",
-        logLevel = LogLevels.none,
-        destination = undefined,
-        debug = false,
-        projectPath = "./tsconfig.json",
-        config = "./.ts-find-unused.config.js",
-        ignorePatterns = "",
-        referenceIgnorePatterns = "",
-      } = opts;
-
-      // Defines the path to the config file
-      const configPath = resolve(process.cwd(), config);
-
-      // Check if config file exists
-      if (existsSync(configPath)) {
-        // Attempt to load .ts-find-unused.config.js
-        try {
-          // Load the config via configPath
-          const configValues = require(configPath);
-
-          // Log "loaded config" message
-          if (logLevel !== LogLevels.none) {
-            console.log(`Loaded config from ${config}`);
-          }
-
-          // FEATURE - validate config file contents
-
-          // Overwrite defaults from configValues
-          output = configValues.output || output;
-          logLevel = configValues.logLevel || logLevel;
-          destination = configValues.destination || destination;
-          debug = configValues.debug || debug;
-          projectPath = configValues.projectPath || projectPath;
-
-          // Parse ignorePatterns
-          if (Array.isArray(configValues.ignorePatterns)) {
-            ignorePatterns = configValues.ignorePatterns.join(",");
-          }
-
-          // Parse referenceIgnorePatterns
-          if (Array.isArray(configValues.referenceIgnorePatterns)) {
-            referenceIgnorePatterns =
-              configValues.referenceIgnorePatterns.join(",");
-          }
-        } catch (e) {
-          // Log config-not-found message
-          if (logLevel !== LogLevels.none) {
-            console.log("Config could not be loaded!");
-          }
-        }
-      }
-
-      // // // //
-
+      // Parse configuration
+      const config = parseConfig(opts);
+      
       // Short-circuit execution if "output" option isn't valid
-      if (["markdown", "json", "txt"].indexOf(output) === -1) {
-        console.log(`"${output}" is not a valid option for --outputFormat`);
+      if (["markdown", "json", "txt"].indexOf(config.output) === -1) {
+        console.log(`"${config.output}" is not a valid option for --outputFormat`);
         process.exit(0);
       }
 
-      // Split ignorePatterns text into array + remove empty strings
-      const ignorePatternsArray: string[] = ignorePatterns
-        .split(",")
-        .filter((i) => i !== "");
-
-      // Split referenceIgnorePatterns text into array + remove empty strings
-      const referenceIgnorePatternsArray: string[] = referenceIgnorePatterns
-        .split(",")
-        .filter((i) => i !== "");
-
       // Log out options if debug is "true"
-      if (debug) {
+      if (config.debug) {
         console.log("Debug CLI options:");
-        console.log(opts);
+        console.log(config);
       }
 
-      // // // //
-      // FEATURE - add support for tsconfig.json path
-      //
-      //    tsconfig.json path:
-      //      ts-find-unused /path/to/project --tsconfigPath=/path/to/project/tsconfig-test.json
-      //
-      // // // //
-
       // Pass parameters to `runCommand` to run the program
-      runCommand({
-        output,
-        destination,
-        projectPath,
-        logLevel,
-        ignorePatterns: ignorePatternsArray,
-        referenceIgnorePatterns: referenceIgnorePatternsArray,
-      });
+      runCommand(config);
     }
   );
 

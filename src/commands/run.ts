@@ -1,13 +1,41 @@
 import { writeFileSync } from "fs";
 import chalk from "chalk";
 import * as path from "path";
-import { OutputFormat, OutputFormats, LogLevel, LogLevels } from "../types";
+import { OutputFormat, OutputFormats, LogLevel, LogLevels, UnreferencedSymbol } from "../types";
 import { scanProject } from "../scanProject";
 import { getOutput } from "../getOutput";
 import { prettify } from "../prettify";
 import { printToStdout } from "../printToStdout";
 
 // // // //
+
+/**
+ * Write output to file or stdout
+ */
+function writeOutput(props: {
+  allUnused: UnreferencedSymbol[];
+  outputFormat: OutputFormat;
+  outputDestination: string | null;
+}): void {
+  const { allUnused, outputFormat, outputDestination } = props;
+  
+  // Get formatted output
+  const output = getOutput({
+    allUnused,
+    outputFormat,
+  });
+
+  // Write output to outputDestination
+  if (outputDestination !== null) {
+    writeFileSync(
+      path.resolve(process.cwd(), outputDestination),
+      prettify({ source: output.join("\n"), outputFormat })
+    );
+  } else {
+    // Print output to stdout
+    printToStdout(output);
+  }
+}
 
 /**
  * Main program function
@@ -20,19 +48,19 @@ function main(props: {
   outputFormat?: OutputFormat;
   outputDestination?: string;
   logLevel: LogLevel;
+  failOnFound?: boolean;
 }): void {
   const {
     logLevel,
     projectRoot,
-    tsConfigFile = "tsconfig.json",
+    tsConfigFile,
     ignorePatterns = [],
     referenceIgnorePatterns = [],
     outputFormat = OutputFormats.txt,
     outputDestination = null,
+    failOnFound = false,
   } = props;
 
-  // FEATURE - this should be decoupled from main ->
-  // just have a separate function that accpets the output and writes it.
   const allUnused = scanProject({
     projectRoot,
     tsConfigFilePath: path.resolve(projectRoot, tsConfigFile),
@@ -51,23 +79,18 @@ function main(props: {
     return;
   }
 
-  // Get formatted output
-  const output = getOutput({
+  // Write output to file or stdout
+  writeOutput({
     allUnused,
     outputFormat,
+    outputDestination,
   });
-
-  // Write output to outputDestination
-  if (outputDestination !== null) {
-    writeFileSync(
-      path.resolve(process.cwd(), outputDestination),
-      prettify({ source: output.join("\n"), outputFormat })
-    );
-    return;
+  
+  // Exit with error code if failOnFound is true
+  if (failOnFound) {
+    console.log(chalk.yellow(`Exiting with error code 1 because unused code was found and --fail-on-found option was set.`));
+    process.exit(1);
   }
-
-  // Print output to stdout
-  printToStdout(output);
 }
 
 // // // //
@@ -79,17 +102,26 @@ export const runCommand = (opts: {
   output: "txt" | "json" | "markdown";
   destination: string | undefined;
   projectPath: string;
+  tsconfigPath: string;
   ignorePatterns: string[];
   referenceIgnorePatterns: string[];
   logLevel: LogLevel;
+  failOnFound?: boolean;
 }) => {
+  // Resolve the project root path
+  const projectRoot = path.resolve(process.cwd(), opts.projectPath);
+  
+  // Use the tsconfig path as is - don't try to resolve it relative to the project root
+  const tsConfigFile = opts.tsconfigPath;
+  
   main({
-    projectRoot: process.cwd(),
-    tsConfigFile: "tsconfig.json",
+    projectRoot,
+    tsConfigFile,
     outputFormat: opts.output,
     outputDestination: opts.destination,
     ignorePatterns: opts.ignorePatterns,
     referenceIgnorePatterns: opts.referenceIgnorePatterns,
     logLevel: opts.logLevel,
+    failOnFound: opts.failOnFound,
   });
 };

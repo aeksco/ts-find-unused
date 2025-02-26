@@ -16,8 +16,9 @@ export function generateMarkdownOutput(
 
   // Add each row to markdown table
   identifiers.forEach((uid, index) => {
-    const link = `[\`${uid.relativePath}\`](${uid.filepath})`;
     const line = uid.lineNumber;
+    // const link = `[\`.${uid.relativePath}\`](.${uid.filepath}#L${line})`;
+    const link = `[\`.${uid.relativePath}\`](.${uid.relativePath}#L${line})`;
     const { label, type } = uid;
     markdownOutput.push(
       `| ${index + 1} | \`${label}\` | ${type} | ${link} | ${line} |`
@@ -38,13 +39,13 @@ export function generateJsonOutput(
   let jsonOutput = [];
 
   // Add a JSON object for each
-  jsonOutput = identifiers.map(uid => {
+  jsonOutput = identifiers.map((uid) => {
     return {
       label: uid.label,
       type: uid.type,
       relativePath: uid.relativePath,
       filepath: uid.filepath,
-      lineNumber: uid.lineNumber
+      lineNumber: uid.lineNumber,
     };
   });
 
@@ -56,7 +57,7 @@ export function generateJsonOutput(
  * Generate formatted .txt output
  */
 export function generateTxtOutput(identifiers: UnreferencedSymbol[]): string[] {
-  return identifiers.map(uid => {
+  return identifiers.map((uid) => {
     return `  -  ${uid.label} (${uid.type}) -> ${uid.relativePath}:${uid.lineNumber}`;
   });
 }
