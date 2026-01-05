@@ -1,4 +1,27 @@
-export type CommandOptions = { [key: string]: string };
+export interface CommandOptions {
+  // New parameter names (v2.0+)
+  excludeFiles?: string[];
+  ignoreUsagesIn?: string[];
+  ignoreUsagesInRegex?: string[];
+
+  // Old parameter names (deprecated, kept for backward compatibility)
+  /** @deprecated Use excludeFiles instead - will be removed in v3.0 */
+  ignorePatterns?: string[];
+  /** @deprecated Use ignoreUsagesIn instead - will be removed in v3.0 */
+  referenceIgnorePatterns?: string[];
+  /** @deprecated Use ignoreUsagesInRegex instead - will be removed in v3.0 */
+  referenceIgnoreRegex?: string[];
+
+  // Other options
+  output?: OutputFormat;
+  destination?: string;
+  projectPath?: string;
+  tsconfigPath?: string;
+  logLevel?: LogLevel;
+  debug?: boolean;
+  failOnFound?: boolean;
+  checkEnumMembers?: boolean;
+}
 
 // // // //
 

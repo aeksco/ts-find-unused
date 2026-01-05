@@ -1,4 +1,4 @@
 import { exportUsedOnlyInTestFile } from "../index"
 
-console.log("exportUsedOnlyInTestFile")
-console.log(exportUsedOnlyInTestFile)
+// Test file imports - used to test reference tracking
+void exportUsedOnlyInTestFile;

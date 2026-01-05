@@ -22,9 +22,16 @@ function parseConfig(opts: {
   tsconfigPath?: string;
   logLevel?: LogLevel;
   config?: string;
+  // New parameter names (v2.0+)
+  excludeFiles?: string;
+  ignoreUsagesIn?: string;
+  ignoreUsagesInRegex?: string;
+  // Old parameter names (deprecated)
   ignorePatterns?: string;
   referenceIgnorePatterns?: string;
+  referenceIgnoreRegex?: string;
   failOnFound?: boolean;
+  checkEnumMembers?: boolean;
 }) {
   // Set default values
   let {
@@ -37,18 +44,23 @@ function parseConfig(opts: {
     config = "./.ts-find-unused.config.js",
     ignorePatterns = "",
     referenceIgnorePatterns = "",
+    referenceIgnoreRegex = "",
     failOnFound = false,
+    checkEnumMembers = true,
   } = opts;
 
   // Defines the path to the config file
   const configPath = resolve(process.cwd(), config);
+
+  // Store config values for deprecation checking
+  let configValues: any = null;
 
   // Check if config file exists
   if (existsSync(configPath)) {
     // Attempt to load .ts-find-unused.config.js
     try {
       // Load the config via configPath
-      const configValues = require(configPath);
+      configValues = require(configPath);
 
       // Log "loaded config" message
       if (logLevel !== LogLevels.none) {
@@ -63,20 +75,30 @@ function parseConfig(opts: {
       projectPath = configValues.projectPath || projectPath;
       tsconfigPath = configValues.tsconfigPath || tsconfigPath;
       failOnFound = configValues.failOnFound || failOnFound;
+      checkEnumMembers = configValues.checkEnumMembers !== undefined ? configValues.checkEnumMembers : checkEnumMembers;
 
-      // Parse ignorePatterns
-      if (Array.isArray(configValues.ignorePatterns)) {
-        ignorePatterns = configValues.ignorePatterns.join(",");
-      } else if (configValues.ignorePatterns) {
-        ignorePatterns = configValues.ignorePatterns;
+      // Parse excludeFiles (new) or ignorePatterns (old, deprecated)
+      const excludeFilesConfig = configValues.excludeFiles || configValues.ignorePatterns;
+      if (Array.isArray(excludeFilesConfig)) {
+        ignorePatterns = excludeFilesConfig.join(",");
+      } else if (excludeFilesConfig) {
+        ignorePatterns = excludeFilesConfig;
       }
 
-      // Parse referenceIgnorePatterns
-      if (Array.isArray(configValues.referenceIgnorePatterns)) {
-        referenceIgnorePatterns =
-          configValues.referenceIgnorePatterns.join(",");
-      } else if (configValues.referenceIgnorePatterns) {
-        referenceIgnorePatterns = configValues.referenceIgnorePatterns;
+      // Parse ignoreUsagesIn (new) or referenceIgnorePatterns (old, deprecated)
+      const ignoreUsagesInConfig = configValues.ignoreUsagesIn || configValues.referenceIgnorePatterns;
+      if (Array.isArray(ignoreUsagesInConfig)) {
+        referenceIgnorePatterns = ignoreUsagesInConfig.join(",");
+      } else if (ignoreUsagesInConfig) {
+        referenceIgnorePatterns = ignoreUsagesInConfig;
+      }
+
+      // Parse ignoreUsagesInRegex (new) or referenceIgnoreRegex (old, deprecated)
+      const ignoreUsagesInRegexConfig = configValues.ignoreUsagesInRegex || configValues.referenceIgnoreRegex;
+      if (Array.isArray(ignoreUsagesInRegexConfig)) {
+        referenceIgnoreRegex = ignoreUsagesInRegexConfig.join(",");
+      } else if (ignoreUsagesInRegexConfig) {
+        referenceIgnoreRegex = ignoreUsagesInRegexConfig;
       }
     } catch (e) {
       // Log config-not-found message
@@ -86,9 +108,10 @@ function parseConfig(opts: {
     }
   }
 
-  // Override with command line arguments if provided
-  ignorePatterns = opts.ignorePatterns || ignorePatterns;
-  referenceIgnorePatterns = opts.referenceIgnorePatterns || referenceIgnorePatterns;
+  // Override with command line arguments if provided (new names take precedence over old)
+  ignorePatterns = opts.excludeFiles || opts.ignorePatterns || ignorePatterns;
+  referenceIgnorePatterns = opts.ignoreUsagesIn || opts.referenceIgnorePatterns || referenceIgnorePatterns;
+  referenceIgnoreRegex = opts.ignoreUsagesInRegex || opts.referenceIgnoreRegex || referenceIgnoreRegex;
 
   // Split ignorePatterns text into array + remove empty strings
   const ignorePatternsArray: string[] = ignorePatterns
@@ -100,20 +123,31 @@ function parseConfig(opts: {
     .split(",")
     .filter((i) => i !== "");
 
-  // If debug is enabled, log the configuration
-  if (debug) {
-    console.log("Debug CLI options:");
-    console.log({
-      output,
-      logLevel,
-      destination,
-      debug,
-      projectPath,
-      tsconfigPath,
-      ignorePatterns: ignorePatternsArray,
-      referenceIgnorePatterns: referenceIgnorePatternsArray,
-      failOnFound
+  // Split referenceIgnoreRegex text into array + remove empty strings
+  const referenceIgnoreRegexArray: string[] = referenceIgnoreRegex
+    .split(",")
+    .filter((i) => i !== "");
+
+  // Check for deprecated parameter usage and warn users
+  const deprecatedOptions = [];
+
+  if (opts.ignorePatterns || (config && configValues && configValues.ignorePatterns)) {
+    deprecatedOptions.push('ignorePatterns → excludeFiles');
+  }
+  if (opts.referenceIgnorePatterns || (config && configValues && configValues.referenceIgnorePatterns)) {
+    deprecatedOptions.push('referenceIgnorePatterns → ignoreUsagesIn');
+  }
+  if (opts.referenceIgnoreRegex || (config && configValues && configValues.referenceIgnoreRegex)) {
+    deprecatedOptions.push('referenceIgnoreRegex → ignoreUsagesInRegex');
+  }
+
+  if (deprecatedOptions.length > 0 && logLevel !== LogLevels.none) {
+    console.warn('\n⚠️  Deprecated configuration options detected:');
+    deprecatedOptions.forEach(msg => {
+      console.warn(`   - ${msg}`);
     });
+    console.warn('   Please update your configuration to use the new parameter names.');
+    console.warn('   See: https://github.com/aeksco/ts-find-unused#configuration\n');
   }
 
   return {
@@ -125,7 +159,9 @@ function parseConfig(opts: {
     tsconfigPath,
     ignorePatterns: ignorePatternsArray,
     referenceIgnorePatterns: referenceIgnorePatternsArray,
-    failOnFound
+    referenceIgnoreRegex: referenceIgnoreRegexArray,
+    failOnFound,
+    checkEnumMembers
   };
 }
 
@@ -159,15 +195,31 @@ program
     "Path to the tsconfig.json file (default: ./tsconfig.json)"
   )
   .option(
+    "-e, --exclude-files <excludeFiles>",
+    "Files to exclude from scanning (these files won't be checked for unused code)"
+  )
+  .option(
+    "-u, --ignore-usages-in <ignoreUsagesIn>",
+    "Ignore usages found in these files (code only used here will be marked as unused)"
+  )
+  .option(
+    "-ur, --ignore-usages-in-regex <ignoreUsagesInRegex>",
+    "Ignore usages in files matching regex patterns"
+  )
+  .option(
     "-i, --ignore-patterns <ignorePatterns>",
-    "Ignore Patterns - skip scanning files that match the glob style pattern"
+    "[DEPRECATED: use --exclude-files] Skip scanning files that match patterns"
   )
   .option(
     "-ri, --reference-ignore-patterns <referenceIgnorePatterns>",
-    "Reference Ignore Patterns - ignore references to potentially unused code in files that match the glob style pattern"
+    "[DEPRECATED: use --ignore-usages-in] Ignore references in files matching patterns"
   )
   .option(
-    "-o, --output <output>",
+    "-rir, --reference-ignore-regex <referenceIgnoreRegex>",
+    "[DEPRECATED: use --ignore-usages-in-regex] Ignore references matching regex"
+  )
+  .option(
+    "-o, --output <o>",
     "Output - choose output format txt|markdown|json (default: txt)"
   )
   .option(
@@ -187,6 +239,14 @@ program
     "--fail-on-found",
     "Exit with error code 1 if unused code is found (useful for CI/CD pipelines)"
   )
+  .option(
+    "--check-enum-members",
+    "Check for unused enum members (default: true)"
+  )
+  .option(
+    "--no-check-enum-members",
+    "Skip checking for unused enum members"
+  )
   .description("Run the ts-find-unused program")
   .action(
     (opts: {
@@ -197,18 +257,37 @@ program
       tsconfigPath?: string;
       logLevel?: LogLevel;
       config?: string;
+      // New parameter names (v2.0+)
+      excludeFiles?: string;
+      ignoreUsagesIn?: string;
+      ignoreUsagesInRegex?: string;
+      // Old parameter names (deprecated)
       ignorePatterns?: string;
       referenceIgnorePatterns?: string;
+      referenceIgnoreRegex?: string;
       failOnFound?: boolean;
+      checkEnumMembers?: boolean;
     }) => {
       // Parse configuration
       const config = parseConfig(opts);
-      
+
       // Short-circuit execution if "output" option isn't valid
       if (["markdown", "json", "txt"].indexOf(config.output) === -1) {
         console.log(`"${config.output}" is not a valid option for --outputFormat`);
-        process.exit(0);
+        process.exit(1);
       }
+
+      // Validate regex patterns upfront
+      config.referenceIgnoreRegex.forEach((pattern, index) => {
+        try {
+          new RegExp(pattern);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          console.error(`Invalid regex pattern at index ${index}: "${pattern}"`);
+          console.error(`Error: ${message}`);
+          process.exit(1);
+        }
+      });
 
       // Log out options if debug is "true"
       if (config.debug) {

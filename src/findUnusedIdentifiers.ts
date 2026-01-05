@@ -35,11 +35,13 @@ interface TrackedReference {
  */
 function getSymbolName(symbol: Symbol): string {
   try {
-    // @ts-ignore
+    // @ts-expect-error - Accessing internal ts-morph property for symbol name extraction.
+    // This is necessary because the public API doesn't reliably expose the escaped text directly.
+    // The fallback logic below handles cases where this internal API access fails.
     return symbol.getNodeProperty("name")._compilerNode.escapedText;
   } catch (e) {
     if (symbol && typeof symbol.getName === 'function') {
-      return symbol.getName();
+      return symbol.getName() || "unknown";
     }
     return "unknown";
   }
@@ -63,8 +65,9 @@ export function findUnusedIdentifiers(props: {
   type: SymbolType;
   logLevel: LogLevel;
   referenceIgnorePatterns: string[];
+  referenceIgnoreRegex: string[];
 }): UnreferencedSymbol[] {
-  const { symbol, projectRoot, type, logLevel, referenceIgnorePatterns } =
+  const { symbol, projectRoot, type, logLevel, referenceIgnorePatterns, referenceIgnoreRegex } =
     props;
 
   // Lookup array of references
@@ -84,7 +87,7 @@ export function findUnusedIdentifiers(props: {
       // Push each reference into the allReferences array
       allReferences.push({
         path: r.getSourceFile().getFilePath(),
-        isDefinition: r.compilerObject.isDefinition,
+        isDefinition: r.compilerObject.isDefinition ?? false,
       });
     }
   }
@@ -121,7 +124,8 @@ export function findUnusedIdentifiers(props: {
     } catch (e) {
       // Log warning message if symbol name cannot be found
       if (logLevel === LogLevels.verbose) {
-        console.log(`Warning: Error looking up name of property: ${e.message}`);
+        const message = e instanceof Error ? e.message : String(e);
+        console.log(`Warning: Error looking up name of property: ${message}`);
       }
       symbolName = "unknown";
     }
@@ -136,16 +140,17 @@ export function findUnusedIdentifiers(props: {
       relativePath: filepath.replace(projectRoot, ""),
     });
   } else {
-    // Copy allReferences and remove first reference (always the file where the symbol is first declared)
+    // The first reference in the allReferences array is always the symbol's definition/declaration.
+    // We need to separate it from the actual usage references to properly detect if a symbol is used.
     const refs: TrackedReference[] = [...allReferences];
-    const ogReference = refs.shift();
+    const ogReference = refs.shift(); // Definition reference
 
     // Create set of unique references
     const uniqueReferences: TrackedReference[] = [
       ...new Set(refs.map((r) => r.path)),
     ].map((p) => {
       return allReferences.find((r) => r.path === p);
-    });
+    }).filter((r): r is TrackedReference => r !== undefined);
 
     // Filter uniqueReferences to ONLY include values that are NOT matches in referenceIgnorePatterns
     const validReferences = uniqueReferences.filter((r) => {
@@ -153,21 +158,42 @@ export function findUnusedIdentifiers(props: {
       if (!r) return false;
       
       // Check if the reference path matches any of the ignore patterns
-      return !referenceIgnorePatterns.some((ip) => {
+      const matchesPattern = referenceIgnorePatterns.some((ip) => {
         // Make sure the ignore pattern is not empty
         if (!ip) return false;
         return r.path.includes(ip);
       });
+
+      // Check if the reference path matches any of the regex patterns
+      const matchesRegex = referenceIgnoreRegex.some((pattern) => {
+        // Make sure the regex pattern is not empty
+        if (!pattern) return false;
+        try {
+          const regex = new RegExp(pattern);
+          return regex.test(r.path);
+        } catch (e) {
+          // If the regex is invalid, log a warning and skip it
+          if (logLevel === LogLevels.verbose) {
+            const message = e instanceof Error ? e.message : String(e);
+            console.log(`Invalid regex pattern: ${pattern}. Error: ${message}`);
+          }
+          return false;
+        }
+      });
+
+      // Return true if the reference doesn't match any ignore pattern or regex
+      return !matchesPattern && !matchesRegex;
     });
 
     // If there are no VALID references, mark the symbol as unused
-    if (validReferences.length === 0) {
+    if (validReferences.length === 0 && ogReference) {
       try {
         lineNumber = symbol.getStartLineNumber();
         symbolName = getSymbolName(symbol);
       } catch (e) {
         if (logLevel === LogLevels.verbose) {
-          console.log(`Error looking up symbol information: ${e.message}`);
+          const message = e instanceof Error ? e.message : String(e);
+          console.log(`Error looking up symbol information: ${message}`);
         }
         symbolName = "unknown";
         lineNumber = 0;

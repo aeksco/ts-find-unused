@@ -8,6 +8,11 @@ export enum UnusedEnum {
   bar = "bar",
 }
 
+export enum ActiveEnumWithUnusedValue {
+  usedValue = "used-value",
+  unusedValue = "unused-value",
+}
+
 // This is an unused export
 export { UnusedExportFromModule } from "./source";
 

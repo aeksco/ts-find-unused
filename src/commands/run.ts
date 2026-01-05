@@ -15,10 +15,10 @@ import { printToStdout } from "../printToStdout";
 function writeOutput(props: {
   allUnused: UnreferencedSymbol[];
   outputFormat: OutputFormat;
-  outputDestination: string | null;
+  outputDestination: string | undefined;
 }): void {
   const { allUnused, outputFormat, outputDestination } = props;
-  
+
   // Get formatted output
   const output = getOutput({
     allUnused,
@@ -26,7 +26,7 @@ function writeOutput(props: {
   });
 
   // Write output to outputDestination
-  if (outputDestination !== null) {
+  if (outputDestination !== undefined) {
     writeFileSync(
       path.resolve(process.cwd(), outputDestination),
       prettify({ source: output.join("\n"), outputFormat })
@@ -45,10 +45,12 @@ function main(props: {
   tsConfigFile: string;
   ignorePatterns: string[];
   referenceIgnorePatterns: string[];
+  referenceIgnoreRegex?: string[];
   outputFormat?: OutputFormat;
   outputDestination?: string;
   logLevel: LogLevel;
   failOnFound?: boolean;
+  checkEnumMembers?: boolean;
 }): void {
   const {
     logLevel,
@@ -56,17 +58,23 @@ function main(props: {
     tsConfigFile,
     ignorePatterns = [],
     referenceIgnorePatterns = [],
+    referenceIgnoreRegex = [],
     outputFormat = OutputFormats.txt,
-    outputDestination = null,
+    outputDestination = undefined,
     failOnFound = false,
+    checkEnumMembers = true,
   } = props;
 
   const allUnused = scanProject({
     projectRoot,
-    tsConfigFilePath: path.resolve(projectRoot, tsConfigFile),
+    tsConfigFilePath: path.isAbsolute(tsConfigFile)
+      ? tsConfigFile
+      : path.resolve(projectRoot, tsConfigFile),
     ignorePatterns,
     referenceIgnorePatterns,
+    referenceIgnoreRegex,
     logLevel,
+    checkEnumMembers,
   });
 
   // Log no-unused-code-found message
@@ -105,8 +113,10 @@ export const runCommand = (opts: {
   tsconfigPath: string;
   ignorePatterns: string[];
   referenceIgnorePatterns: string[];
+  referenceIgnoreRegex: string[];
   logLevel: LogLevel;
   failOnFound?: boolean;
+  checkEnumMembers?: boolean;
 }) => {
   // Resolve the project root path
   const projectRoot = path.resolve(process.cwd(), opts.projectPath);
@@ -121,7 +131,9 @@ export const runCommand = (opts: {
     outputDestination: opts.destination,
     ignorePatterns: opts.ignorePatterns,
     referenceIgnorePatterns: opts.referenceIgnorePatterns,
+    referenceIgnoreRegex: opts.referenceIgnoreRegex,
     logLevel: opts.logLevel,
     failOnFound: opts.failOnFound,
+    checkEnumMembers: opts.checkEnumMembers,
   });
 };

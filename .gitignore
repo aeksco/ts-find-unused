@@ -106,3 +106,11 @@ dist
 # JS source files
 index.js
 src/*.js
+
+# Claude Code
+.claude/
+
+# Development scripts and test output
+run.sh
+unused.md
+*.md.tmp

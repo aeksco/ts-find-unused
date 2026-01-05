@@ -6,13 +6,13 @@ CLI tool to find unused code in TypeScript projects
 
 ### TODOs
 
-- Add remaining CLI options - what else here????
+- [DONE] ~~Add loading spinner~~ - Implemented with ora
+- [DONE] ~~Add error handling when `tsconfig.json` can't be found~~ - Implemented
+- [DONE] ~~Add some color to `printToStdout` function~~ - Implemented with chalk
+- [DONE] ~~Enable TypeScript strict mode~~ - Completed
+- [DONE] ~~Add fail-on-found option for CI/CD~~ - Implemented
 
-- Add error handling when `tsconfig.json` can't be found
-
-- Add loading spinner? https://blog.bitsrc.io/build-command-line-spinners-in-node-js-3e432d926d56
-
-- Add some color to `printToStdout` function?
+- Add remaining CLI options (if needed)
 
 - Documentation
 
@@ -84,6 +84,10 @@ You can then run the `yarn find-unused` command to run `ts-find-unused` against 
 **Reference Ignore Patterns** (comma separated)
 
 - `ts-find-unused /path/to/project --reference-ignore-patterns=index.ts`
+
+**Reference Ignore Regex** (comma separated)
+
+- `ts-find-unused /path/to/project --reference-ignore-regex=index\\.tsx?$`
 
 **Output Format**
 

@@ -25,13 +25,17 @@ export function scanProject(props: {
   tsConfigFilePath: string;
   ignorePatterns: string[];
   referenceIgnorePatterns: string[];
+  referenceIgnoreRegex: string[];
   logLevel: LogLevel;
+  checkEnumMembers?: boolean;
 }): UnreferencedSymbol[] {
   const {
     projectRoot,
     ignorePatterns = [],
     referenceIgnorePatterns = [],
+    referenceIgnoreRegex = [],
     logLevel,
+    checkEnumMembers = true,
   } = props;
   
   // Make a mutable copy of the tsConfigFilePath
@@ -84,7 +88,8 @@ export function scanProject(props: {
       },
     });
   } catch (error) {
-    spinner.fail(`Error loading project: ${error.message}`);
+    const message = error instanceof Error ? error.message : String(error);
+    spinner.fail(`Error loading project: ${message}`);
     process.exit(1);
   }
 
@@ -101,6 +106,7 @@ export function scanProject(props: {
       spinner.stop();
       console.log("Ignore patterns:", ignorePatterns);
       console.log("Reference ignore patterns:", referenceIgnorePatterns);
+      console.log("Reference ignore regex:", referenceIgnoreRegex);
       spinner.start("Scanning for unused code...");
     }
   }
@@ -124,6 +130,8 @@ export function scanProject(props: {
         projectRoot,
         logLevel,
         referenceIgnorePatterns,
+        referenceIgnoreRegex,
+        checkEnumMembers,
       }),
     ];
   });
