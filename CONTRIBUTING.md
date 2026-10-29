@@ -96,16 +96,18 @@ node bin/ts-find-unused.js --help
 ```
 ts-find-unused/
 ├── src/
-│   ├── bin/            # CLI entry point
-│   ├── commands/       # Command implementations
-│   ├── __tests__/      # Test files
-│   ├── scanProject.ts  # Project scanning logic
-│   ├── scanFile.ts     # File scanning logic
-│   ├── findUnusedIdentifiers.ts  # Core detection logic
-│   ├── getOutput.ts    # Output formatting
-│   └── types.ts        # TypeScript types
-├── bin/                # Executable entry point
-├── config.example.js   # Example configuration
+│   ├── bin/                     # CLI entry point
+│   ├── commands/                # Command implementations
+│   ├── __tests__/               # Test files
+│   ├── scanProject.ts           # Loads the project, scans every file, runs propagation
+│   ├── scanFile.ts              # Collects the declarations of one file
+│   ├── collectSymbolRecord.ts   # Looks up and classifies the references of one declaration
+│   ├── references.ts            # Reference classification and owner lookup
+│   ├── propagate.ts             # Reference graph: depth propagation, cycles, clusters, removable files
+│   ├── getOutput.ts             # Output formatting
+│   └── types.ts                 # TypeScript types
+├── fixtures/                    # Small TypeScript projects with known answers, used by the tests
+├── bin/                         # Executable entry point
 └── README.md
 ```
 
@@ -177,23 +179,25 @@ npm test -- --coverage
 - Update tests when modifying existing features
 - Aim for meaningful test coverage
 - Use descriptive test names
+- Add a fixture project under `fixtures/` when a test needs a codebase with a known answer (see `fixtures/README.md`)
 
 Example:
 
 ```typescript
 describe("scanProject", () => {
   test("returns array of unused symbols", () => {
-    const results = scanProject({
+    const result = scanProject({
       projectRoot,
       tsConfigFilePath,
-      excludeFiles: [],
-      ignoreUsagesIn: [],
-      ignoreUsagesInRegex: [],
+      ignorePatterns: [],
+      referenceIgnorePatterns: [],
+      referenceIgnoreRegex: [],
       logLevel: LogLevels.none,
       checkEnumMembers: true,
+      depth: "max",
     });
 
-    expect(Array.isArray(results)).toBe(true);
+    expect(Array.isArray(result.unused)).toBe(true);
   });
 });
 ```
