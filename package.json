@@ -1,6 +1,6 @@
 {
   "name": "ts-find-unused",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "CLI tool to find unused code in TypeScript projects",
   "scripts": {
     "test": "jest",
