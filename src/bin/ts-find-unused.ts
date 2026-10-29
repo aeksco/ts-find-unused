@@ -8,8 +8,23 @@ import { resolve } from "path";
 import { existsSync } from "fs";
 import chalk from "chalk";
 import { runCommand } from "../commands/run";
-import { LogLevels, LogLevel } from "../types";
+import { LogLevels, LogLevel, Depth } from "../types";
+import { parseDepth } from "../parseDepth";
 const packageJson = require("../../package.json");
+
+/**
+ * Parse a depth value from the CLI or the config file, exiting on an invalid one
+ */
+function requireValidDepth(value: unknown, source: string): Depth {
+  const parsed = parseDepth(value);
+  if (parsed === undefined) {
+    console.error(
+      `Invalid value for ${source}: "${String(value)}". Use a positive integer or "max".`
+    );
+    process.exit(1);
+  }
+  return parsed;
+}
 
 /**
  * Parse configuration from config file and command line options
@@ -32,6 +47,8 @@ function parseConfig(opts: {
   referenceIgnoreRegex?: string;
   failOnFound?: boolean;
   checkEnumMembers?: boolean;
+  depth?: string;
+  reexportsAreUsages?: boolean;
 }) {
   // Set default values
   let {
@@ -48,6 +65,8 @@ function parseConfig(opts: {
     failOnFound = false,
     checkEnumMembers = true,
   } = opts;
+  let depth: Depth = 1;
+  let reexportsAreUsages = false;
 
   // Defines the path to the config file
   const configPath = resolve(process.cwd(), config);
@@ -76,6 +95,12 @@ function parseConfig(opts: {
       tsconfigPath = configValues.tsconfigPath || tsconfigPath;
       failOnFound = configValues.failOnFound || failOnFound;
       checkEnumMembers = configValues.checkEnumMembers !== undefined ? configValues.checkEnumMembers : checkEnumMembers;
+      if (configValues.depth !== undefined) {
+        depth = requireValidDepth(configValues.depth, `"depth" in ${config}`);
+      }
+      if (configValues.reexportsAreUsages !== undefined) {
+        reexportsAreUsages = Boolean(configValues.reexportsAreUsages);
+      }
 
       // Parse excludeFiles (new) or ignorePatterns (old, deprecated)
       const excludeFilesConfig = configValues.excludeFiles || configValues.ignorePatterns;
@@ -112,6 +137,12 @@ function parseConfig(opts: {
   ignorePatterns = opts.excludeFiles || opts.ignorePatterns || ignorePatterns;
   referenceIgnorePatterns = opts.ignoreUsagesIn || opts.referenceIgnorePatterns || referenceIgnorePatterns;
   referenceIgnoreRegex = opts.ignoreUsagesInRegex || opts.referenceIgnoreRegex || referenceIgnoreRegex;
+  if (opts.depth !== undefined) {
+    depth = requireValidDepth(opts.depth, "--depth");
+  }
+  if (opts.reexportsAreUsages) {
+    reexportsAreUsages = true;
+  }
 
   // Split ignorePatterns text into array + remove empty strings
   const ignorePatternsArray: string[] = ignorePatterns
@@ -161,7 +192,9 @@ function parseConfig(opts: {
     referenceIgnorePatterns: referenceIgnorePatternsArray,
     referenceIgnoreRegex: referenceIgnoreRegexArray,
     failOnFound,
-    checkEnumMembers
+    checkEnumMembers,
+    depth,
+    reexportsAreUsages,
   };
 }
 
@@ -247,6 +280,14 @@ program
     "--no-check-enum-members",
     "Skip checking for unused enum members"
   )
+  .option(
+    "--depth <depth>",
+    'Levels of transitive dead code to follow: a positive integer, or "max" to follow every chain and report dead cycles (default: 1)'
+  )
+  .option(
+    "--reexports-are-usages",
+    'Count re-exports (export { x } from "./y") as usages of x: the pre-1.1 behaviour, useful for library barrels'
+  )
   .description("Run the ts-find-unused program")
   .action(
     (opts: {
@@ -267,6 +308,8 @@ program
       referenceIgnoreRegex?: string;
       failOnFound?: boolean;
       checkEnumMembers?: boolean;
+      depth?: string;
+      reexportsAreUsages?: boolean;
     }) => {
       // Parse configuration
       const config = parseConfig(opts);
