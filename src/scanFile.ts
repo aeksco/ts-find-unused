@@ -1,117 +1,81 @@
 import {
-  ClassDeclaration,
+  BindingElement,
+  BindingName,
   EnumDeclaration,
-  FunctionDeclaration,
-  InterfaceDeclaration,
+  Node,
+  ReferenceFindableNode,
   SourceFile,
-  TypeAliasDeclaration,
-  VariableDeclaration,
 } from "ts-morph";
-import { SymbolTypes, UnreferencedSymbol, LogLevel, LogLevels } from "./types";
-import { findUnusedIdentifiers } from "./findUnusedIdentifiers";
+import {
+  SymbolTypes,
+  LogLevel,
+  LogLevels,
+  ScannedFile,
+  SymbolRecord,
+  SymbolType,
+} from "./types";
+import {
+  collectSymbolRecord,
+  getSymbolName,
+  isDirectlyUnused,
+} from "./collectSymbolRecord";
+import { ReferenceClassifier, TrackedDeclaration, nodeKey } from "./references";
 
 // // // //
 
 /**
- * Find unused enum members
+ * isDeletableFile
+ * A file can only be deleted wholesale when every statement in it is an import, a local
+ * export list, or one of the declarations we track. Anything else (module-level code,
+ * `export ... from` re-exports, namespaces, `export default <expression>`) would be lost.
  */
-function findUnusedEnumMembers(props: {
-  enumDeclaration: EnumDeclaration;
-  projectRoot: string;
-  logLevel: LogLevel;
-  referenceIgnorePatterns: string[];
-  referenceIgnoreRegex: string[];
-}): UnreferencedSymbol[] {
-  const { enumDeclaration, projectRoot, logLevel, referenceIgnorePatterns, referenceIgnoreRegex } = props;
-  const enumName = enumDeclaration.getName();
-  const filePath = enumDeclaration.getSourceFile().getFilePath();
-  const relativePath = filePath.replace(projectRoot, "");
-  const unusedMembers: UnreferencedSymbol[] = [];
-
-  // Get all members of the enum
-  const enumMembers = enumDeclaration.getMembers();
-  
-  if (logLevel === LogLevels.verbose) {
-    console.log(`Checking members of enum ${enumName}, found ${enumMembers.length} members`);
+function isDeletableFile(sourceFile: SourceFile): boolean {
+  for (const statement of sourceFile.getStatements()) {
+    if (Node.isImportDeclaration(statement)) {
+      continue;
+    }
+    if (Node.isExportDeclaration(statement)) {
+      // `export { x } from "./y"` keeps consumers of ./y working - deleting it would break them
+      if (statement.getModuleSpecifier() !== undefined) {
+        return false;
+      }
+      continue;
+    }
+    if (
+      Node.isFunctionDeclaration(statement) ||
+      Node.isClassDeclaration(statement) ||
+      Node.isInterfaceDeclaration(statement) ||
+      Node.isTypeAliasDeclaration(statement) ||
+      Node.isEnumDeclaration(statement) ||
+      Node.isVariableStatement(statement)
+    ) {
+      continue;
+    }
+    return false;
   }
+  return true;
+}
 
-  // Check each enum member
-  enumMembers.forEach(member => {
-    const memberName = member.getName();
-    const qualifiedName = `${enumName}.${memberName}`;
-    
-    // Find all references to this enum member
-    const references = member.findReferences();
-    let allReferences = [];
-    
-    for (const ref of references) {
-      for (const r of ref.getReferences()) {
-        allReferences.push({
-          path: r.getSourceFile().getFilePath(),
-          isDefinition: r.compilerObject.isDefinition,
-        });
-      }
-    }
-    
-    // Make a filtered array of references that are *not* the definition
-    const nonDefinitionReferences = allReferences.filter(r => r.isDefinition === false);
-    
-    if (logLevel === LogLevels.verbose) {
-      console.log(`Enum member ${qualifiedName}: ${nonDefinitionReferences.length} references`);
-    }
-    
-    // Check if the enum member is unused
-    if (allReferences.length === 0 || nonDefinitionReferences.length === 0) {
-      unusedMembers.push({
-        type: SymbolTypes.enum,
-        filepath: filePath,
-        relativePath,
-        lineNumber: member.getStartLineNumber(),
-        label: qualifiedName, // Using the full qualified name: EnumName.keyName
-      });
+/**
+ * getBindingElements
+ * Leaf bindings of a destructuring pattern, nested patterns included:
+ * `const { a, b: { c }, ...rest } = obj` yields a, c and rest
+ */
+function getBindingElements(name: BindingName): BindingElement[] {
+  if (!Node.isObjectBindingPattern(name) && !Node.isArrayBindingPattern(name)) {
+    return [];
+  }
+  const leaves: BindingElement[] = [];
+  for (const element of name.getElements()) {
+    if (Node.isOmittedExpression(element)) continue;
+    const elementName = element.getNameNode();
+    if (Node.isIdentifier(elementName)) {
+      leaves.push(element);
     } else {
-      // Filter out references that match ignore patterns
-      const validReferences = nonDefinitionReferences.filter(r => {
-        if (!r) return false;
-        
-        // Check against ignore patterns
-        const matchesPattern = referenceIgnorePatterns.some(ip => {
-          if (!ip) return false;
-          return r.path.includes(ip);
-        });
-        
-        // Check against regex patterns
-        const matchesRegex = referenceIgnoreRegex.some(pattern => {
-          if (!pattern) return false;
-          try {
-            const regex = new RegExp(pattern);
-            return regex.test(r.path);
-          } catch (e) {
-            if (logLevel === LogLevels.verbose) {
-              const message = e instanceof Error ? e.message : String(e);
-              console.log(`Invalid regex pattern: ${pattern}. Error: ${message}`);
-            }
-            return false;
-          }
-        });
-        
-        return !matchesPattern && !matchesRegex;
-      });
-      
-      // If there are no valid references, mark as unused
-      if (validReferences.length === 0) {
-        unusedMembers.push({
-          type: SymbolTypes.enum,
-          filepath: filePath,
-          relativePath,
-          lineNumber: member.getStartLineNumber(),
-          label: qualifiedName,
-        });
-      }
+      leaves.push(...getBindingElements(elementName));
     }
-  });
-  
-  return unusedMembers;
+  }
+  return leaves;
 }
 
 /**
@@ -121,157 +85,124 @@ export function scanFile(props: {
   sourceFile: SourceFile;
   projectRoot: string;
   logLevel: LogLevel;
-  referenceIgnorePatterns: string[];
-  referenceIgnoreRegex: string[];
+  classifier: ReferenceClassifier;
   checkEnumMembers?: boolean;
-}): UnreferencedSymbol[] {
-  const { 
-    sourceFile, 
-    projectRoot, 
-    logLevel, 
-    referenceIgnorePatterns, 
-    referenceIgnoreRegex,
-    checkEnumMembers = true
-  } = props;
-  const classes: ClassDeclaration[] = sourceFile.getClasses();
-  const interfaces: InterfaceDeclaration[] = sourceFile.getInterfaces();
-  const typeAliases: TypeAliasDeclaration[] = sourceFile.getTypeAliases();
-  const enums: EnumDeclaration[] = sourceFile.getEnums();
-  const functions: FunctionDeclaration[] = sourceFile.getFunctions();
-  const variables: VariableDeclaration[] = sourceFile.getVariableDeclarations();
+}): {
+  records: SymbolRecord[];
+  file: ScannedFile;
+  /** destructuring declaration key -> keys of its bindings, for references owned by the declaration */
+  ownerAliases: Map<string, string[]>;
+} {
+  const { sourceFile, projectRoot, logLevel, classifier, checkEnumMembers = true } = props;
+  const filepath = sourceFile.getFilePath();
 
-  // Lots details of scanFile to the console with verbose LogLevel
+  const declarations: Array<{ node: TrackedDeclaration; type: SymbolType }> = [
+    ...sourceFile.getTypeAliases().map((node) => ({ node, type: SymbolTypes.typeAlias })),
+    ...sourceFile.getFunctions().map((node) => ({ node, type: SymbolTypes.function })),
+    ...sourceFile.getClasses().map((node) => ({ node, type: SymbolTypes.class })),
+    ...sourceFile.getEnums().map((node) => ({ node, type: SymbolTypes.enum })),
+    ...sourceFile.getVariableDeclarations().map((node) => ({ node, type: SymbolTypes.variable })),
+    ...sourceFile.getInterfaces().map((node) => ({ node, type: SymbolTypes.interface })),
+  ];
+
+  // Log details of scanFile to the console with verbose LogLevel
   if (logLevel === LogLevels.verbose) {
     console.log("- - - - - - - - - - - - - - - - - - - -");
-    console.log("Checking ", sourceFile.getFilePath());
-    console.log("interfaces", interfaces.length);
-    console.log("classes", classes.length);
-    console.log("typeAliases", typeAliases.length);
-    console.log("enums", enums.length);
-    console.log("functions", functions.length);
-    console.log("variables", variables.length);
-    console.log("\n");
+    console.log("Checking ", filepath);
+    console.log("declarations", declarations.length);
     console.log("- - - - - - - - - - - - - - - - - - - -");
   }
 
-  // Defines array of unused identifiers within the file
-  let unusedIdentifiers: UnreferencedSymbol[] = [];
-
-  // Find unused type aliases
-  typeAliases.forEach((symbol: TypeAliasDeclaration) => {
-    unusedIdentifiers = [
-      ...unusedIdentifiers,
-      ...findUnusedIdentifiers({
-        symbol,
-        logLevel,
-        projectRoot,
-        referenceIgnorePatterns,
-        referenceIgnoreRegex,
-        type: SymbolTypes.typeAlias,
-      }),
-    ];
-  });
-
-  // Find unused functions
-  functions.forEach((symbol: FunctionDeclaration) => {
-    unusedIdentifiers = [
-      ...unusedIdentifiers,
-      ...findUnusedIdentifiers({
-        symbol,
-        logLevel,
-        projectRoot,
-        referenceIgnorePatterns,
-        referenceIgnoreRegex,
-        type: SymbolTypes.function,
-      }),
-    ];
-  });
-
-  // Find unused classes
-  classes.forEach((symbol: ClassDeclaration) => {
-    unusedIdentifiers = [
-      ...unusedIdentifiers,
-      ...findUnusedIdentifiers({
-        symbol,
-        logLevel,
-        projectRoot,
-        referenceIgnorePatterns,
-        referenceIgnoreRegex,
-        type: SymbolTypes.class,
-      }),
-    ];
-  });
-
-  // Find unused enums
-  enums.forEach((symbol: EnumDeclaration) => {
-    // Find unused enum declarations
-    const unusedEnum = findUnusedIdentifiers({
-      symbol,
-      logLevel,
-      projectRoot,
-      referenceIgnorePatterns,
-      referenceIgnoreRegex,
-      type: SymbolTypes.enum,
-    });
-
-    // If the entire enum is unused, add it and skip member checking
-    if (unusedEnum.length > 0) {
-      unusedIdentifiers = [
-        ...unusedIdentifiers,
-        ...unusedEnum,
-      ];
-    } else if (checkEnumMembers) {
-      // Only check members if the enum itself is used
-      unusedIdentifiers = [
-        ...unusedIdentifiers,
-        ...findUnusedEnumMembers({
-          enumDeclaration: symbol,
-          projectRoot,
-          logLevel,
-          referenceIgnorePatterns,
-          referenceIgnoreRegex,
-        }),
-      ];
-    }
-  });
-
-  // Find unused variables
-  variables.forEach((symbol: VariableDeclaration) => {
-    unusedIdentifiers = [
-      ...unusedIdentifiers,
-      ...findUnusedIdentifiers({
-        symbol,
-        logLevel,
-        projectRoot,
-        referenceIgnorePatterns,
-        referenceIgnoreRegex,
-        type: SymbolTypes.variable,
-      }),
-    ];
-  });
-
-  // Find unused interfaces
-  interfaces.forEach((symbol: InterfaceDeclaration) => {
+  // Reference lookup can fail on exotic declarations (broken files, ...) - report and move on
+  const tryCollect = (args: {
+    node: Node & ReferenceFindableNode;
+    label: string;
+    type: SymbolType;
+    parentKey?: string;
+    selfKey?: string;
+  }): SymbolRecord | undefined => {
     try {
-      unusedIdentifiers = [
-        ...unusedIdentifiers,
-        ...findUnusedIdentifiers({
-          symbol,
-          logLevel,
-          projectRoot,
-          referenceIgnorePatterns,
-          referenceIgnoreRegex,
-          type: SymbolTypes.interface,
-        }),
-      ];
+      return collectSymbolRecord({ ...args, projectRoot, classifier, logLevel });
     } catch (e) {
-      // Log interface lookup error
       if (logLevel === LogLevels.verbose) {
-        console.log("Warning: interface lookup err");
+        const message = e instanceof Error ? e.message : String(e);
+        console.log(`Warning: could not look up references for ${args.label} in ${filepath}: ${message}`);
+      }
+      return undefined;
+    }
+  };
+
+  const records: SymbolRecord[] = [];
+  const declarationKeys: string[] = [];
+  const ownerAliases = new Map<string, string[]>();
+  let unscannedDeclarations = 0;
+
+  for (const { node, type } of declarations) {
+    // `const { a, b } = obj` - the pattern itself has no references, so check each binding
+    // on its own. References inside the declaration (its initializer) count as self references.
+    if (Node.isVariableDeclaration(node) && !Node.isIdentifier(node.getNameNode())) {
+      const declarationKey = nodeKey(node);
+      const elements = getBindingElements(node.getNameNode());
+      const elementKeys: string[] = [];
+      let complete = elements.length > 0;
+      for (const element of elements) {
+        const record = tryCollect({
+          node: element,
+          label: element.getName(),
+          type,
+          selfKey: declarationKey,
+        });
+        if (record === undefined) {
+          complete = false;
+          continue;
+        }
+        records.push(record);
+        elementKeys.push(record.key);
+      }
+      declarationKeys.push(...elementKeys);
+      if (complete) {
+        ownerAliases.set(declarationKey, elementKeys);
+      } else {
+        unscannedDeclarations++;
+      }
+      continue;
+    }
+
+    const record = tryCollect({ node, label: getSymbolName(node), type });
+    if (record === undefined) {
+      unscannedDeclarations++;
+      continue;
+    }
+    records.push(record);
+    declarationKeys.push(record.key);
+
+    // Only check the members of enums that are used somewhere - members of a dead enum are noise
+    if (type === SymbolTypes.enum && checkEnumMembers && !isDirectlyUnused(record)) {
+      const enumDeclaration = node as EnumDeclaration;
+      const enumName = getSymbolName(enumDeclaration);
+      const members = enumDeclaration.getMembers();
+      if (logLevel === LogLevels.verbose) {
+        console.log(`Checking members of enum ${enumName}, found ${members.length} members`);
+      }
+      for (const member of members) {
+        const memberRecord = tryCollect({
+          node: member,
+          label: `${enumName}.${member.getName()}`,
+          type: SymbolTypes.enum,
+          parentKey: record.key,
+        });
+        if (memberRecord !== undefined) records.push(memberRecord);
       }
     }
-  });
+  }
 
-  // Return all unused identifiers for this file
-  return unusedIdentifiers;
+  const file: ScannedFile = {
+    filepath,
+    relativePath: filepath.replace(projectRoot, ""),
+    declarationKeys,
+    unscannedDeclarations,
+    deletable: isDeletableFile(sourceFile),
+  };
+
+  return { records, file, ownerAliases };
 }

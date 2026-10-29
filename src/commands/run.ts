@@ -1,7 +1,13 @@
 import { writeFileSync } from "fs";
 import chalk from "chalk";
 import * as path from "path";
-import { OutputFormat, OutputFormats, LogLevel, LogLevels, UnreferencedSymbol } from "../types";
+import {
+  Depth,
+  OutputFormat,
+  OutputFormats,
+  LogLevel,
+  ScanResult,
+} from "../types";
 import { scanProject } from "../scanProject";
 import { getOutput } from "../getOutput";
 import { prettify } from "../prettify";
@@ -13,15 +19,15 @@ import { printToStdout } from "../printToStdout";
  * Write output to file or stdout
  */
 function writeOutput(props: {
-  allUnused: UnreferencedSymbol[];
+  result: ScanResult;
   outputFormat: OutputFormat;
   outputDestination: string | undefined;
 }): void {
-  const { allUnused, outputFormat, outputDestination } = props;
+  const { result, outputFormat, outputDestination } = props;
 
   // Get formatted output
   const output = getOutput({
-    allUnused,
+    result,
     outputFormat,
   });
 
@@ -33,7 +39,7 @@ function writeOutput(props: {
     );
   } else {
     // Print output to stdout
-    printToStdout(output);
+    printToStdout(output, result);
   }
 }
 
@@ -51,6 +57,8 @@ function main(props: {
   logLevel: LogLevel;
   failOnFound?: boolean;
   checkEnumMembers?: boolean;
+  depth?: Depth;
+  reexportsAreUsages?: boolean;
 }): void {
   const {
     logLevel,
@@ -63,9 +71,11 @@ function main(props: {
     outputDestination = undefined,
     failOnFound = false,
     checkEnumMembers = true,
+    depth = 1,
+    reexportsAreUsages = false,
   } = props;
 
-  const allUnused = scanProject({
+  const result = scanProject({
     projectRoot,
     tsConfigFilePath: path.isAbsolute(tsConfigFile)
       ? tsConfigFile
@@ -75,10 +85,12 @@ function main(props: {
     referenceIgnoreRegex,
     logLevel,
     checkEnumMembers,
+    depth,
+    reexportsAreUsages,
   });
 
   // Log no-unused-code-found message
-  if (allUnused.length === 0) {
+  if (result.unused.length === 0) {
     console.log(
       `${chalk.cyan(
         "No unused code found :)"
@@ -89,11 +101,11 @@ function main(props: {
 
   // Write output to file or stdout
   writeOutput({
-    allUnused,
+    result,
     outputFormat,
     outputDestination,
   });
-  
+
   // Exit with error code if failOnFound is true
   if (failOnFound) {
     console.log(chalk.yellow(`Exiting with error code 1 because unused code was found and --fail-on-found option was set.`));
@@ -117,13 +129,15 @@ export const runCommand = (opts: {
   logLevel: LogLevel;
   failOnFound?: boolean;
   checkEnumMembers?: boolean;
+  depth?: Depth;
+  reexportsAreUsages?: boolean;
 }) => {
   // Resolve the project root path
   const projectRoot = path.resolve(process.cwd(), opts.projectPath);
-  
+
   // Use the tsconfig path as is - don't try to resolve it relative to the project root
   const tsConfigFile = opts.tsconfigPath;
-  
+
   main({
     projectRoot,
     tsConfigFile,
@@ -135,5 +149,7 @@ export const runCommand = (opts: {
     logLevel: opts.logLevel,
     failOnFound: opts.failOnFound,
     checkEnumMembers: opts.checkEnumMembers,
+    depth: opts.depth,
+    reexportsAreUsages: opts.reexportsAreUsages,
   });
 };
