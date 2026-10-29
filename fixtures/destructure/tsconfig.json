@@ -1,0 +1,4 @@
+{
+  "compilerOptions": { "strict": true, "module": "commonjs", "target": "es2018", "noEmit": true },
+  "include": ["**/*.ts"]
+}
